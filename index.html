@@ -13,57 +13,55 @@
 <style>
 :root{
   --bg:#14181c; --panel:#1d2329; --ink:#e7eaed; --muted:#9aa5b0; --line:#2e363e;
-  --signal:#f2c230; --ok:#4cc27e; --warn:#e3a53a; --bad:#ef6b5c;
+  --signal:#f2c230; --ok:#2fa865; --warn:#e8b021; --bad:#d94a3a;
   --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;-webkit-tap-highlight-color:transparent}
 button,input,select{font:inherit}
-.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
-  padding:calc(12px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+body{padding-top:env(safe-area-inset-top,0px)}
+/* ---- cámara ---- */
+.cam{position:relative;height:58vh;min-height:300px;background:#000;overflow:hidden}
+.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.guide{position:absolute;left:7%;right:7%;top:20%;bottom:30%;border:3px solid rgba(255,255,255,.85);border-radius:10px;box-shadow:0 0 0 100vmax rgba(0,0,0,.28);pointer-events:none}
+.guide span{position:absolute;top:-28px;left:0;right:0;text-align:center;font-size:.8rem;font-weight:600;text-shadow:0 1px 3px #000}
+.shutter{position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:84px;height:84px;border-radius:50%;
+  border:6px solid #fff;background:var(--signal);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+.shutter:active{transform:translateX(-50%) scale(.93)}
+.shutter:disabled{background:#777}
+.shutter:focus-visible{outline:3px solid var(--signal);outline-offset:4px}
+.torch{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(36px + env(safe-area-inset-bottom,0px));background:rgba(20,24,28,.8);color:var(--ink);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:9px 13px;font-weight:600;font-size:.85rem;cursor:pointer}
+.torch[aria-pressed=true]{background:var(--signal);color:#14181c}
+.result{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:20px;color:#fff;pointer-events:none}
+.result b{font-family:var(--f-display);font-size:3rem;text-transform:uppercase;letter-spacing:.03em;line-height:1}
+.result span{font-family:var(--f-mono);font-weight:600;font-size:1.5rem;word-break:break-all}
+.result small{font-size:1rem;font-weight:500}
+.result.ok{background:rgba(47,168,101,.93)} .result.dup{background:rgba(232,176,33,.95);color:#14181c} .result.bad{background:rgba(217,74,58,.93)}
+.result.busy{background:rgba(0,0,0,.45)}
+.over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;background:#0d1013}
+.over p{margin:0;color:var(--muted);max-width:32ch}
+.big-btn{background:var(--signal);color:#14181c;border:0;border-radius:10px;padding:16px 26px;font-family:var(--f-display);font-weight:700;font-size:1.6rem;text-transform:uppercase;letter-spacing:.03em;cursor:pointer}
+.big-btn:disabled{opacity:.6}
+#diag{margin:0;font-family:var(--f-mono);font-size:.72rem;color:var(--muted);white-space:pre-wrap;text-align:left}
+/* ---- panel ---- */
+.panel{display:flex;flex-direction:column;gap:10px;max-width:560px;margin:0 auto;padding:12px max(14px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
 .top{display:flex;align-items:center;gap:10px}
 .top select{flex:1;min-width:0;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:10px;font-size:16px}
 .count{text-align:right;line-height:1}
-.count b{display:block;font-family:var(--f-display);font-size:2.4rem;font-variant-numeric:tabular-nums}
+.count b{display:block;font-family:var(--f-display);font-size:2.3rem;font-variant-numeric:tabular-nums}
 .count span{font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-/* botón de foto */
-.shot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:34vh;border-radius:14px;cursor:pointer;
-  background:var(--signal);color:#14181c;background-image:repeating-linear-gradient(-45deg,transparent 0 16px,rgba(0,0,0,.06) 16px 32px);user-select:none}
-.shot:active{transform:scale(.99)}
-.shot input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.shot:focus-within{outline:3px solid var(--ink);outline-offset:3px}
-.shot svg{width:64px;height:64px}
-.shot strong{font-family:var(--f-display);font-weight:700;font-size:2.4rem;text-transform:uppercase;letter-spacing:.03em;line-height:1}
-.shot small{font-weight:500;font-size:.9rem}
-.queue{position:absolute;top:10px;right:12px;background:#14181c;color:var(--signal);border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:600}
-/* último resultado */
-.last{border-radius:10px;padding:12px 14px;border:2px solid var(--line);background:var(--panel);display:flex;gap:12px;align-items:center}
-.last img{width:56px;height:56px;object-fit:cover;border-radius:6px;flex:0 0 auto}
-.last .t{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
-.last .n{font-family:var(--f-mono);font-weight:600;font-size:1.25rem;word-break:break-all}
-.last .sub{font-size:.9rem;color:var(--muted)}
-.last.ok{border-color:var(--ok)} .last.ok .t{color:var(--ok)}
-.last.dup{border-color:var(--warn)} .last.dup .t{color:var(--warn)}
-.last.bad{border-color:var(--bad)} .last.bad .t{color:var(--bad)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .btn{flex:1 1 auto;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:10px 12px;font-weight:600;cursor:pointer;position:relative;white-space:nowrap;text-align:center}
 .btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
 .btn:focus-visible,.x:focus-visible{outline:3px solid var(--signal);outline-offset:1px}
-h2{font-family:var(--f-display);font-size:1.2rem;text-transform:uppercase;letter-spacing:.04em;margin:6px 0 0;display:flex;justify-content:space-between;align-items:baseline}
-h2 span{font-family:var(--f-body);font-size:.8rem;color:var(--muted);text-transform:none;letter-spacing:0}
-.pend{display:flex;flex-direction:column;gap:8px}
-.card{display:flex;gap:10px;align-items:center;background:var(--panel);border:1.5px solid var(--bad);border-radius:8px;padding:8px}
-.card img{width:84px;height:84px;object-fit:cover;border-radius:6px;flex:0 0 auto;cursor:zoom-in}
-.card form{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-.card input{width:100%;background:var(--bg);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:9px;font-size:16px;font-family:var(--f-mono)}
-.card .row{display:flex;gap:6px}
-.card .row .btn{padding:8px}
 form.manual{display:flex;gap:8px}
 form.manual input{flex:1;min-width:0;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:10px;font-size:16px}
+h2{font-family:var(--f-display);font-size:1.2rem;text-transform:uppercase;letter-spacing:.04em;margin:4px 0 0}
 ol{list-style:none;margin:0;padding:0;background:var(--panel);border:1.5px solid var(--line);border-radius:8px;overflow:hidden}
 li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line);min-height:46px}
 li:first-child{border-top:0}
@@ -75,59 +73,50 @@ li.confirm{background:#3a1c18}
 .x{background:none;border:0;color:var(--muted);padding:8px;cursor:pointer;border-radius:4px;font-size:.85rem}
 .empty{padding:16px;text-align:center;color:var(--muted)}
 .msg{font-size:.85rem;color:var(--muted);min-height:1.2em}
-dialog{background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;max-width:min(94vw,520px);padding:12px}
-dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog{background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;max-width:min(92vw,420px)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
 dialog h3{font-family:var(--f-display);text-transform:uppercase;margin:0 0 8px;font-size:1.3rem}
 dialog input{width:100%;background:var(--bg);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:10px;font-size:16px;margin:8px 0}
 dialog .row{display:flex;gap:8px;justify-content:flex-end}
-#zoomImg{max-width:100%;max-height:75vh;display:block;margin:0 auto 8px;border-radius:6px}
 .ver{font-size:.7rem;color:var(--muted);text-align:center}
 @media (prefers-reduced-motion:reduce){li.new{animation:none}}
 </style>
 </head>
 <body>
-<div class="wrap">
+<section class="cam" id="cam">
+  <video id="video" playsinline muted autoplay></video>
+  <div class="guide"><span>Encaja el código de barras aquí</span></div>
+  <button class="torch" id="torchBtn" type="button" aria-pressed="false" hidden>Linterna</button>
+  <button class="shutter" id="shutter" type="button" aria-label="Disparar"></button>
+  <div class="result" id="result" hidden></div>
+  <div class="over" id="over">
+    <button class="big-btn" id="startBtn" type="button">Abrir cámara</button>
+    <p id="camMsg">Pulsa el botón amarillo para cada etiqueta. Verde = guardada · Amarillo = repetida · Rojo = repetir foto.</p>
+    <pre id="diag"></pre>
+  </div>
+</section>
+
+<section class="panel">
   <div class="top">
     <select id="recSel" aria-label="Recuento"></select>
     <div class="count"><b id="count">0</b><span>tablas</span></div>
   </div>
-
-  <label class="shot" id="shot">
-    <input type="file" id="cam" accept="image/*" capture="environment" aria-label="Hacer foto a la etiqueta">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-    <strong>Hacer foto</strong>
-    <small>Cerca del código de barras y sin mover</small>
-    <span class="queue" id="queue" hidden></span>
-  </label>
-
-  <div class="last" id="last" hidden></div>
-
   <div class="actions">
-    <span class="btn">Fotos de la galería<input type="file" id="gal" accept="image/*" multiple aria-label="Subir fotos de la galería"></span>
     <button class="btn primary" id="xlsxBtn" type="button">Exportar Excel</button>
+    <button class="btn" id="newRecBtn" type="button">Nuevo recuento</button>
   </div>
-
-  <section id="pendBox" hidden>
-    <h2>Fotos sin leer <span id="pendCount"></span></h2>
-    <p class="msg" style="margin:0">Escribe el número que ves en la foto (tócala para ampliarla) o descártala.</p>
-    <div class="pend" id="pend"></div>
-  </section>
-
   <form class="manual" id="manualForm" autocomplete="off">
     <input id="manual" inputmode="numeric" placeholder="Escribir nº a mano" aria-label="Número de tabla a mano">
     <button class="btn" type="submit" style="flex:0 0 auto">Añadir</button>
   </form>
   <div class="msg" id="msg"></div>
-
   <h2>Tablas leídas</h2>
   <ol id="list"></ol>
-
   <div class="actions">
-    <button class="btn" id="newRecBtn" type="button">Nuevo recuento</button>
     <span class="btn">Importar Excel<input type="file" id="importIn" accept=".xlsx,.xls,.csv" aria-label="Importar Excel"></span>
   </div>
-  <p class="ver">versión 4 · foto a foto</p>
-</div>
+  <p class="ver">versión 5 · disparo directo</p>
+</section>
 
 <dialog id="recDlg">
   <form method="dialog">
@@ -136,9 +125,6 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     <input id="recName">
     <div class="row"><button class="btn" value="cancel">Cancelar</button><button class="btn primary" value="ok">Crear</button></div>
   </form>
-</dialog>
-<dialog id="zoomDlg">
-  <form method="dialog"><img id="zoomImg" alt="Foto de la etiqueta"><div class="row"><button class="btn">Cerrar</button></div></form>
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -149,42 +135,35 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   const $ = id => document.getElementById(id);
   const VALID = /^0?2\d{10,11}$/;   // 220250163749 · antiguas 022017061199 / 22016767370
   const KEY = "escaner-tablas-v1";
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej({ name: "Timeout" }), ms))]);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-  // ---------- datos (en el móvil) ----------
-  let DB = { recuentos: [], tablas: [], pendientes: [], actual: "" };
-  try { DB = Object.assign(DB, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch {}
-  DB.pendientes = DB.pendientes || [];
-  function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(DB)); }
-    catch {
-      // si se llena, se quitan las miniaturas más antiguas de fotos sin leer
-      DB.pendientes.slice(0, 5).forEach(p => p.thumb = "");
-      try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch { flashMsg("El móvil no tiene espacio para guardar. Exporta el Excel.", true); }
-    }
-  }
+  // ---------- datos (solo números, en el móvil; no se guardan fotos) ----------
+  let DB = { recuentos: [], tablas: [], actual: "" };
+  try { const o = JSON.parse(localStorage.getItem(KEY) || "{}"); DB.recuentos = o.recuentos || []; DB.tablas = o.tablas || []; DB.actual = o.actual || ""; } catch {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch { flashMsg("No se pudo guardar en el móvil. Exporta el Excel.", true); } };
   if (!DB.recuentos.length) { const d = new Date(); DB.recuentos = ["Recuento " + String(d.getDate()).padStart(2,"0") + "-" + String(d.getMonth()+1).padStart(2,"0")]; }
   if (!DB.recuentos.includes(DB.actual)) DB.actual = DB.recuentos[DB.recuentos.length - 1];
   save();
   try { navigator.storage?.persist?.(); } catch {}
-
   const current = () => DB.tablas.filter(t => t.recuento === DB.actual);
-  const pend = () => DB.pendientes.filter(p => p.recuento === DB.actual);
   const has = s => DB.tablas.some(t => t.recuento === DB.actual && t.serie === s);
   let newSerie = null, confirmSerie = null;
   function add(serie, metodo) {
     if (has(serie)) return false;
     DB.tablas.push({ serie, recuento: DB.actual, metodo, ts: new Date().toISOString() });
-    newSerie = serie; return true;
+    save(); newSerie = serie; return true;
   }
 
-  // ---------- lectura del código de barras ----------
-  let native = null, zx = null, ready = null;
-  function setup() {
-    if (ready) return ready;
-    ready = (async () => {
+  // ---------- lector ----------
+  let native = null, zx = null, readerReady = null;
+  function setupReader() {
+    if (readerReady) return readerReady;
+    readerReady = (async () => {
       try {
         if ("BarcodeDetector" in window) {
-          const sup = await Promise.race([BarcodeDetector.getSupportedFormats(), new Promise(r => setTimeout(() => r([]), 3000))]);
+          const sup = await Promise.race([BarcodeDetector.getSupportedFormats(), sleep(3000).then(() => [])]);
           const f = ["code_128", "itf", "code_39", "ean_13"].filter(x => sup.includes(x));
           if (f.length) native = new BarcodeDetector({ formats: f });
         }
@@ -196,101 +175,157 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
         zx = new Z.MultiFormatReader(); zx.setHints(hints);
       }
     })();
-    return ready;
+    return readerReady;
   }
-  setup();
-
-  async function loadImage(file) {
-    try { return await createImageBitmap(file, { imageOrientation: "from-image" }); } catch {}
-    try { return await createImageBitmap(file); } catch {}
-    return await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
-  }
-  function draw(img, max, deg) {
-    const iw = img.width || img.naturalWidth, ih = img.height || img.naturalHeight;
-    const k = Math.min(1, max / Math.max(iw, ih)), w = Math.round(iw * k), h = Math.round(ih * k);
+  setupReader();
+  const clean = arr => [...new Set(arr.map(v => String(v).replace(/\D/g, "")).filter(v => VALID.test(v)))];
+  function draw(src, sw, sh, max, deg) {
+    const k = Math.min(1, max / Math.max(sw, sh)), w = Math.round(sw * k), h = Math.round(sh * k);
     const r = deg * Math.PI / 180, c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
     const cv = document.createElement("canvas"); cv.width = Math.round(w*c + h*s); cv.height = Math.round(w*s + h*c);
     const x = cv.getContext("2d", { willReadFrequently: true });
     x.fillStyle = "#fff"; x.fillRect(0, 0, cv.width, cv.height);
-    x.translate(cv.width/2, cv.height/2); x.rotate(r); x.drawImage(img, -w/2, -h/2, w, h);
+    x.translate(cv.width/2, cv.height/2); x.rotate(r); x.drawImage(src, -w/2, -h/2, w, h);
     return cv;
   }
-  const clean = arr => [...new Set(arr.map(v => String(v).replace(/\D/g, "")).filter(v => VALID.test(v)))];
-  async function decode(img) {
-    await setup();
+  async function decodeFrame(src, w, h, quick) {
     if (native) {
-      try { const r = clean((await native.detect(img)).map(b => b.rawValue)); if (r.length) return r; } catch {}
-      try { const r = clean((await native.detect(draw(img, 1600, 0))).map(b => b.rawValue)); if (r.length) return r; } catch {}
+      try { const r = clean((await native.detect(src)).map(b => b.rawValue)); if (r.length) return r; } catch {}
     }
     if (zx) {
       const Z = window.ZXing;
-      for (const max of [1600, 1100, 2200]) for (const deg of [0, 90, -20, 20, -45, 45, 70, -70]) {
+      const angles = quick ? [0, 90] : [0, 90, -20, 20, -45, 45, 70, -70];
+      for (const max of quick ? [1400] : [1400, 1000, 2000]) for (const deg of angles) {
         try {
-          const t = zx.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(draw(img, max, deg))))).getText();
+          const t = zx.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(draw(src, w, h, max, deg))))).getText();
           zx.reset(); const r = clean([t]); if (r.length) return r;
         } catch { try { zx.reset(); } catch {} }
-        await new Promise(r => setTimeout(r, 0));
       }
     }
     return [];
   }
-  const thumb = img => draw(img, 420, 0).toDataURL("image/jpeg", .7);
 
-  // ---------- cola de fotos: se puede seguir haciendo fotos mientras lee ----------
-  const queue = []; let busy = false;
-  function enqueue(files) { files.forEach(f => queue.push(f)); showQueue(); if (!busy) work(); }
-  function showQueue() { const q = $("queue"); const n = queue.length + (busy ? 1 : 0); q.hidden = !n; q.textContent = n === 1 ? "Leyendo 1 foto…" : `Leyendo ${n} fotos…`; }
-  async function work() {
-    busy = true;
-    while (queue.length) {
-      const f = queue.shift(); showQueue();
-      let img = null, codes = [];
-      try { img = await loadImage(f); codes = await decode(img); } catch {}
-      if (codes.length) {
-        const res = codes.map(v => ({ v, ok: add(v, "Escaneada") }));
-        save(); render();
-        const anyNew = res.some(r => r.ok);
-        showLast(anyNew ? "ok" : "dup", anyNew ? (res.length > 1 ? `${res.filter(r=>r.ok).length} nuevas` : "Guardada") : "Ya estaba", res.map(r => r.v).join(" · "), img ? thumb(img) : "");
-        feedback(anyNew);
-      } else {
-        const t = img ? thumb(img) : "";
-        DB.pendientes.push({ id: Date.now() + "-" + Math.random().toString(36).slice(2, 7), recuento: DB.actual, thumb: t, ts: new Date().toISOString() });
-        save(); render();
-        showLast("bad", "No se lee", "Apartada abajo para escribir el número", t);
-        feedback(null);
-      }
-      try { img?.close?.(); } catch {}
+  // ---------- cámara dentro de la app ----------
+  const video = $("video");
+  let stream = null, track = null, imageCapture = null;
+  const diag = []; const log = t => { diag.push(t); $("diag").textContent = diag.join("\n"); };
+
+  async function getStream() {
+    const tries = [
+      { audio: false, video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } },
+      { audio: false, video: { facingMode: "environment" } },
+      { audio: false, video: true }
+    ];
+    let last;
+    for (const c of tries) {
+      try { return await withTimeout(navigator.mediaDevices.getUserMedia(c), 12000); }
+      catch (e) { last = e; log("   intento fallido: " + (e?.name || e)); if (e && (e.name === "NotAllowedError" || e.name === "SecurityError")) throw e; }
     }
-    busy = false; showQueue();
+    throw last;
   }
-  $("cam").addEventListener("change", e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) enqueue(f); });
-  $("gal").addEventListener("change", e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) enqueue(f); });
+  async function openCamera() {
+    $("startBtn").disabled = true; diag.length = 0;
+    $("camMsg").textContent = "Abriendo cámara… Si sale un aviso, pulsa «Permitir».";
+    log("1. Pidiendo cámara");
+    if (!navigator.mediaDevices?.getUserMedia) { fail("Este navegador no deja usar la cámara. Abre la dirección en Chrome (Android) o Safari (iPhone)."); return; }
+    try { stream = await getStream(); }
+    catch (e) {
+      fail(e?.name === "NotAllowedError" ? "Permiso de cámara denegado. Toca el candado junto a la dirección > Permisos > Cámara > Permitir, y recarga."
+        : e?.name === "Timeout" ? "La cámara no responde. Si abriste el enlace desde WhatsApp o Gmail, ábrelo en Chrome o Safari. Cierra otras apps que usen la cámara."
+        : e?.name === "NotReadableError" ? "Otra app está usando la cámara. Ciérrala y vuelve a intentarlo."
+        : "No se pudo abrir la cámara (" + (e?.name || "error") + ").");
+      return;
+    }
+    track = stream.getVideoTracks()[0];
+    const st = track.getSettings?.() || {};
+    log(`2. Cámara abierta ${st.width || "?"}×${st.height || "?"}`);
+    video.srcObject = stream;
+    video.play().then(() => log("3. Imagen en marcha"), e => log("   vídeo: " + (e?.name || e)));
+    $("over").hidden = true;
+    try { if ("ImageCapture" in window) imageCapture = new ImageCapture(track); } catch {}
+    withTimeout(track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }), 2000).catch(() => {});
+    try { if (track.getCapabilities?.().torch) $("torchBtn").hidden = false; } catch {}
+    try { await withTimeout(setupReader(), 5000); } catch {}
+    log("4. Lector: " + (native ? "del móvil" : zx ? "ZXing" : "ninguno"));
+    if (!native && !zx) { fail("No se pudo cargar el lector de códigos. Comprueba que tienes internet y recarga."); return; }
+    navigator.wakeLock?.request("screen").catch(() => {});
+  }
+  function fail(text) {
+    $("over").hidden = false; $("startBtn").disabled = false; $("camMsg").textContent = text; log("✗ " + text);
+  }
 
-  // ---------- avisos ----------
+  // ---------- disparo ----------
+  let shooting = false, resultT;
+  async function grab() {
+    // foto a máxima calidad si el móvil lo permite; si no, el fotograma del vídeo
+    if (imageCapture) {
+      try { const b = await withTimeout(imageCapture.grabFrame(), 1500); return { src: b, w: b.width, h: b.height, close: () => b.close?.() }; } catch {}
+    }
+    const w = video.videoWidth, h = video.videoHeight;
+    if (!w) return null;
+    const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(video, 0, 0, w, h);
+    return { src: c, w, h, close() {} };
+  }
+  async function shoot() {
+    if (shooting) return;
+    if (!stream) { openCamera(); return; }
+    shooting = true; $("shutter").disabled = true;
+    showResult("busy", "Leyendo…", "", "");
+    let codes = [];
+    try {
+      // prueba varios fotogramas seguidos (~1 s) para que un pequeño movimiento no lo estropee
+      for (let i = 0; i < 6 && !codes.length; i++) {
+        const f = await grab();
+        if (f) { codes = await decodeFrame(f.src, f.w, f.h, i < 4); f.close(); }
+        if (!codes.length) await sleep(80);
+      }
+    } catch {}
+    if (!codes.length) {
+      showResult("bad", "No se lee", "", "Acércate, encaja el código en el recuadro y repite");
+      feedback(null);
+    } else {
+      const res = codes.map(v => ({ v, ok: add(v, "Escaneada") }));
+      const nuevas = res.filter(r => r.ok);
+      if (nuevas.length) { showResult("ok", nuevas.length > 1 ? `${nuevas.length} guardadas` : "Guardada", nuevas.map(r => r.v).join("\n"), res.length > nuevas.length ? "Alguna ya estaba" : ""); feedback(true); }
+      else { showResult("dup", "Repetida", res.map(r => r.v).join("\n"), "No se ha guardado otra vez"); feedback(false); }
+      render();
+    }
+    shooting = false; $("shutter").disabled = false;
+  }
+  function showResult(kind, title, num, sub) {
+    const r = $("result"); r.hidden = false; r.className = "result " + kind;
+    r.innerHTML = `<b>${esc(title)}</b>${num ? `<span>${esc(num).replace(/\n/g, "<br>")}</span>` : ""}${sub ? `<small>${esc(sub)}</small>` : ""}`;
+    clearTimeout(resultT);
+    if (kind !== "busy") resultT = setTimeout(() => r.hidden = true, kind === "bad" ? 1600 : 1300);
+  }
   let actx = null;
   function feedback(ok) {
     try {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-      const play = (f, t0, d) => { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; o.type = "square"; g.gain.value = .06; o.connect(g).connect(actx.destination); o.start(actx.currentTime + t0); o.stop(actx.currentTime + t0 + d); };
-      if (ok === true) play(1760, 0, .09); else if (ok === false) { play(620, 0, .07); play(620, .12, .07); } else play(260, 0, .3);
+      const play = (f, t0, d) => { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; o.type = "square"; g.gain.value = .07; o.connect(g).connect(actx.destination); o.start(actx.currentTime + t0); o.stop(actx.currentTime + t0 + d); };
+      if (ok === true) play(1760, 0, .1); else if (ok === false) { play(660, 0, .08); play(660, .14, .08); } else play(220, 0, .35);
     } catch {}
-    try { navigator.vibrate?.(ok === true ? 70 : ok === false ? [30,50,30] : [200]); } catch {}
+    try { navigator.vibrate?.(ok === true ? 80 : ok === false ? [40, 60, 40] : 300); } catch {}
   }
-  function showLast(kind, title, text, img) {
-    const l = $("last"); l.hidden = false; l.className = "last " + kind;
-    l.innerHTML = (img ? `<img src="${img}" alt="">` : "") + `<div><div class="t">${esc(title)}</div><div class="${kind === "bad" ? "sub" : "n"}">${esc(text)}</div></div>`;
-  }
-  let msgT;
-  function flashMsg(t, bad) { $("msg").textContent = t; $("msg").style.color = bad ? "var(--bad)" : "var(--muted)"; clearTimeout(msgT); msgT = setTimeout(() => $("msg").textContent = "", 5000); }
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  $("startBtn").addEventListener("click", openCamera);
+  $("shutter").addEventListener("click", shoot);
+  $("torchBtn").addEventListener("click", async () => {
+    const on = $("torchBtn").getAttribute("aria-pressed") !== "true";
+    try { await track.applyConstraints({ advanced: [{ torch: on }] }); $("torchBtn").setAttribute("aria-pressed", on); } catch {}
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !stream) return;
+    if (track?.readyState === "ended") { stream = null; $("over").hidden = false; $("camMsg").textContent = "La cámara se cerró. Pulsa para abrirla otra vez."; }
+    else navigator.wakeLock?.request("screen").catch(() => {});
+  });
 
-  // ---------- pantalla ----------
+  // ---------- lista ----------
   function render() {
     $("recSel").innerHTML = DB.recuentos.map(r => `<option ${r === DB.actual ? "selected" : ""}>${esc(r)}</option>`).join("");
     const list = current().slice().reverse();
     $("count").textContent = list.length;
     $("list").innerHTML = !list.length
-      ? `<li class="empty">Todavía no hay tablas en este recuento. Pulsa «Hacer foto».</li>`
+      ? `<li class="empty">Todavía no hay tablas en este recuento.</li>`
       : list.map(t => {
           const h = new Date(t.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
           if (t.serie === confirmSerie) return `<li class="confirm" data-s="${esc(t.serie)}"><span class="n">${esc(t.serie)}</span><button class="x" data-a="yes" type="button" style="color:var(--bad);font-weight:600">Quitar</button><button class="x" data-a="no" type="button">Cancelar</button></li>`;
@@ -298,13 +333,6 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
           return `<li data-s="${esc(t.serie)}" class="${t.serie === newSerie ? "new" : ""}"><span class="n">${esc(t.serie)}</span><span class="meta">${h}<br>${how}</span><button class="x" data-a="ask" type="button" aria-label="Quitar ${esc(t.serie)}">✕</button></li>`;
         }).join("");
     newSerie = null;
-    const p = pend();
-    $("pendBox").hidden = !p.length; $("pendCount").textContent = p.length ? `(${p.length})` : "";
-    const open = document.activeElement?.closest?.(".card")?.dataset.id;
-    if (!open) $("pend").innerHTML = p.map(x => `<div class="card" data-id="${x.id}">
-        ${x.thumb ? `<img src="${x.thumb}" alt="Foto sin leer" data-zoom>` : `<div style="width:84px;height:84px;border-radius:6px;background:var(--bg)"></div>`}
-        <form data-id="${x.id}"><input inputmode="numeric" placeholder="Nº de la foto" aria-label="Número de tabla">
-        <div class="row"><button class="btn primary" type="submit">Guardar</button><button class="btn" type="button" data-drop>Descartar</button></div></form></div>`).join("");
   }
   $("list").addEventListener("click", e => {
     const b = e.target.closest("button[data-a]"); if (!b) return;
@@ -314,31 +342,20 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     else { DB.tablas = DB.tablas.filter(t => !(t.recuento === DB.actual && t.serie === s)); confirmSerie = null; save(); }
     render();
   });
-  $("pend").addEventListener("submit", e => {
-    e.preventDefault();
-    const f = e.target, v = f.querySelector("input").value.replace(/\D/g, "");
-    if (!VALID.test(v)) { flashMsg("Un nº de tabla tiene 12 cifras y empieza por 2 (ej. 220250163749).", true); return; }
-    const ok = add(v, "Escrito a mano");
-    DB.pendientes = DB.pendientes.filter(p => p.id !== f.dataset.id);
-    save(); document.activeElement?.blur?.(); render();
-    flashMsg(ok ? `Guardada ${v}` : `${v} ya estaba en el recuento`);
-  });
-  $("pend").addEventListener("click", e => {
-    if (e.target.matches("[data-zoom]")) { $("zoomImg").src = e.target.src; $("zoomDlg").showModal(); return; }
-    if (e.target.matches("[data-drop]")) { const id = e.target.closest("form").dataset.id; DB.pendientes = DB.pendientes.filter(p => p.id !== id); save(); document.activeElement?.blur?.(); render(); }
-  });
   $("recSel").addEventListener("change", e => { DB.actual = e.target.value; save(); render(); });
   $("newRecBtn").addEventListener("click", () => { $("recName").value = ""; $("recDlg").showModal(); });
   $("recDlg").addEventListener("close", () => {
     const v = $("recName").value.trim();
     if ($("recDlg").returnValue === "ok" && v) { if (!DB.recuentos.includes(v)) DB.recuentos.push(v); DB.actual = v; save(); render(); }
   });
+  let msgT;
+  function flashMsg(t, bad) { $("msg").textContent = t; $("msg").style.color = bad ? "var(--bad)" : "var(--muted)"; clearTimeout(msgT); msgT = setTimeout(() => $("msg").textContent = "", 5000); }
   $("manualForm").addEventListener("submit", e => {
     e.preventDefault();
     const v = $("manual").value.replace(/\D/g, "");
     if (!VALID.test(v)) { flashMsg("Un nº de tabla tiene 12 cifras y empieza por 2 (ej. 220250163749).", true); return; }
     flashMsg(add(v, "Escrito a mano") ? `Guardada ${v}` : `${v} ya estaba en el recuento`);
-    save(); $("manual").value = ""; render();
+    $("manual").value = ""; render();
   });
 
   // ---------- Excel ----------
@@ -351,7 +368,6 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [{wch:16},{wch:22},{wch:20},{wch:18}];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tablas");
     XLSX.writeFile(wb, "Tablas_" + DB.actual.replace(/[^\w\-]+/g, "_") + ".xlsx");
-    if (pend().length) flashMsg(`Ojo: quedan ${pend().length} fotos sin leer que no van en el Excel.`, true);
   });
   $("importIn").addEventListener("change", async e => {
     const f = e.target.files[0]; e.target.value = ""; if (!f || !window.XLSX) return;
@@ -362,8 +378,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
         const v = String(row[0] ?? "").replace(/\D/g, "");
         if (VALID.test(v)) add(v, "Importado") ? n++ : dup++;
       });
-      save(); render();
-      flashMsg(`Importadas ${n} tablas en «${DB.actual}»${dup ? ` (${dup} ya estaban)` : ""}.`);
+      render(); flashMsg(`Importadas ${n} tablas en «${DB.actual}»${dup ? ` (${dup} ya estaban)` : ""}.`);
     } catch { flashMsg("No se pudo leer ese archivo. Usa un Excel con los números en la primera columna.", true); }
   });
 
