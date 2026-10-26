@@ -126,9 +126,12 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <div class="bar"><i id="sBar" style="width:0"></i></div>
   </div>
   <div class="actions">
-    <span class="btn primary">Cargar inventario<input type="file" id="invIn" accept=".xlsx,.xls,.csv" aria-label="Cargar Excel del inventario"></span>
+    <button class="btn primary" id="pickBtn" type="button">Elegir inventario</button>
     <button class="btn" id="xlsxBtn" type="button">Exportar Excel</button>
+  </div>
+  <div class="actions">
     <button class="btn" id="newRecBtn" type="button">Nuevo recuento</button>
+    <span class="btn">Cargar Excel del móvil<input type="file" id="invIn" accept=".xlsx,.xls,.csv" aria-label="Cargar Excel del inventario desde el móvil"></span>
   </div>
   <form class="manual" id="manualForm" autocomplete="off">
     <input id="manual" inputmode="numeric" placeholder="Escribir nº a mano" aria-label="Número de tabla a mano">
@@ -146,9 +149,17 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <span class="btn">Importar leídas desde Excel<input type="file" id="importIn" accept=".xlsx,.xls,.csv" aria-label="Importar tablas leídas desde Excel"></span>
   </div>
   <p style="text-align:center;margin:0"><button class="link" id="dropInv" type="button" hidden>Quitar el inventario cargado de este recuento</button></p>
-  <p class="ver">versión 9</p>
+  <p class="ver">versión 10</p>
 </section>
 
+<dialog id="invDlg">
+  <form method="dialog">
+    <h3>Elegir inventario</h3>
+    <p class="msg" id="invMsg" style="margin:0 0 8px">Buscando inventarios…</p>
+    <div id="invList" style="display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" value="cancel">Cerrar</button></div>
+  </form>
+</dialog>
 <dialog id="recDlg">
   <form method="dialog">
     <h3>Nuevo recuento</h3>
@@ -465,6 +476,45 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     best.forEach(v => { if (!seen.has(norm(v))) { seen.add(norm(v)); out.push(v); } });
     return { series: out, dups: best.length - out.length };
   }
+  // ---------- inventarios subidos desde el PC (carpeta "inventarios" del repositorio) ----------
+  function repoInfo() {
+    if (window.REPO) return window.REPO;
+    const owner = location.hostname.split(".")[0], repo = location.pathname.split("/").filter(Boolean)[0] || "";
+    return owner + "/" + repo;
+  }
+  $("pickBtn").addEventListener("click", async () => {
+    $("invList").innerHTML = ""; $("invMsg").textContent = "Buscando inventarios…"; $("invDlg").showModal();
+    try {
+      const r = await withTimeout(fetch(`https://api.github.com/repos/${repoInfo()}/contents/inventarios?t=${Date.now()}`), 12000);
+      if (r.status === 404) { $("invMsg").textContent = "Todavía no hay carpeta «inventarios» en GitHub. Súbela desde el PC."; return; }
+      if (!r.ok) throw new Error(r.status);
+      const files = (await r.json()).filter(f => f.type === "file" && /\.(xlsx|xls|csv)$/i.test(f.name)).sort((a, b) => b.name.localeCompare(a.name));
+      if (!files.length) { $("invMsg").textContent = "La carpeta «inventarios» está vacía."; return; }
+      $("invMsg").textContent = "Toca el inventario que vas a hacer:";
+      $("invList").innerHTML = files.map(f => {
+        const nombre = f.name.replace(/\.(xlsx|xls|csv)$/i, "");
+        const ya = DB.esperadas[nombre] ? ` · ${DB.tablas.filter(t => t.recuento === nombre).length} leídas` : "";
+        return `<button class="btn" type="button" data-f="${esc(f.name)}" style="text-align:left;white-space:normal">${esc(nombre)}<span style="color:var(--muted);font-weight:400">${ya}</span></button>`;
+      }).join("");
+    } catch { $("invMsg").textContent = "No se pudo ver la lista (¿sin conexión?). Inténtalo de nuevo con cobertura."; }
+  });
+  $("invList").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-f]"); if (!b) return;
+    const file = b.dataset.f, nombre = file.replace(/\.(xlsx|xls|csv)$/i, "");
+    if (!window.XLSX) { $("invMsg").textContent = "Hace falta internet para leer el Excel."; return; }
+    $("invMsg").textContent = "Cargando " + nombre + "…";
+    try {
+      const r = await withTimeout(fetch("inventarios/" + encodeURIComponent(file) + "?t=" + Date.now()), 20000);
+      if (!r.ok) throw new Error(r.status);
+      const { series, dups } = await readSeries(r);
+      if (!series.length) { $("invMsg").textContent = "Ese Excel no tiene números de 11 cifras o más."; return; }
+      if (!DB.recuentos.includes(nombre)) DB.recuentos.push(nombre);
+      DB.actual = nombre; DB.esperadas[nombre] = series; save(); view = "miss"; render();
+      $("invDlg").close();
+      flashMsg(`Inventario «${nombre}»: ${series.length} tablas${dups ? ` (${dups} repetidas en el Excel, contadas una vez)` : ""}. Ya puedes escanear.`);
+    } catch { $("invMsg").textContent = "No se pudo descargar. Si lo acabas de subir, espera 2 minutos y vuelve a probar."; }
+  });
+
   $("invIn").addEventListener("change", async e => {
     const f = e.target.files[0]; e.target.value = ""; if (!f) return;
     if (!window.XLSX) { flashMsg("Hace falta internet para leer el Excel.", true); return; }
