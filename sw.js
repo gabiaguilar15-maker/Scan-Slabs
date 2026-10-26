@@ -1,5 +1,5 @@
 // Guarda la app y sus librerías para que funcione sin cobertura en el almacén.
-const CACHE = "escaner-tablas-v2";
+const CACHE = "escaner-tablas-v3";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
   "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js",

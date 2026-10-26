@@ -84,8 +84,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   <div class="camover" id="camOver">
     <button class="big-btn" id="startBtn" type="button">Empezar a escanear</button>
     <p id="camMsg">Apunta al código de barras de la etiqueta. Lee solo, sin pulsar nada: verde = nueva, ámbar = ya estaba.</p>
-    <p style="font-size:.7rem;opacity:.6">versión 2</p>
-  </div>
+    <p style="font-size:.7rem;opacity:.6">versión 3</p>  </div>
 </section>
 
 <section class="panel">
@@ -94,6 +93,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     <div class="count"><b id="count">0</b><span>tablas</span></div>
   </div>
   <div class="actions">
+    <span class="btn">Hacer foto<input type="file" id="photoIn" accept="image/*" capture="environment" aria-label="Hacer foto de la etiqueta"></span>
     <button class="btn" id="newRecBtn" type="button">Nuevo recuento</button>
     <span class="btn">Importar Excel<input type="file" id="importIn" accept=".xlsx,.xls,.csv" aria-label="Importar Excel"></span>
     <button class="btn primary" id="xlsxBtn" type="button">Exportar Excel</button>
@@ -103,6 +103,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     <button class="btn" type="submit" style="flex:0 0 auto">Añadir</button>
   </form>
   <div class="msg" id="msg"></div>
+  <pre id="diag" style="margin:0;font-size:.72rem;color:var(--muted);white-space:pre-wrap;font-family:var(--f-mono)"></pre>
   <ol id="list"></ol>
 </section>
 
@@ -313,13 +314,18 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|; wv\)|GSA\//i.test(navigator.userAgent);
   if (inApp) $("camMsg").textContent = "Parece que has abierto el enlace desde otra app (WhatsApp, Gmail…). Si la cámara no arranca, ábrelo en Chrome (Android) o Safari (iPhone).";
 
+  const diag = [];
+  function log(t) { diag.push(t); $("diag").textContent = diag.join("\n"); }
+
   async function start() {
-    $("startBtn").disabled = true;
+    $("startBtn").disabled = true; diag.length = 0;
     $("camMsg").textContent = "Abriendo cámara… Si sale un aviso de permiso, pulsa «Permitir».";
-    if (!navigator.mediaDevices?.getUserMedia) { $("camMsg").textContent = "Este navegador no da acceso a la cámara. Abre la página con Chrome (Android) o Safari (iPhone)."; $("startBtn").disabled = false; return; }
+    log("1. Pidiendo cámara…");
+    if (!navigator.mediaDevices?.getUserMedia) { log("✗ Este navegador no permite cámara"); $("camMsg").textContent = "Este navegador no da acceso a la cámara. Abre la página con Chrome (Android) o Safari (iPhone)."; $("startBtn").disabled = false; return; }
     try {
       stream = await getStream();
     } catch (e) {
+      log("✗ Cámara: " + (e?.name || e));
       $("startBtn").disabled = false;
       $("camMsg").textContent =
         e && e.name === "NotAllowedError" ? "Permiso de cámara denegado. Toca el candado junto a la dirección > Permisos > Cámara > Permitir, y recarga." :
@@ -328,18 +334,57 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
         "No se pudo abrir la cámara (" + (e?.name || "error") + "). Prueba en Chrome (Android) o Safari (iPhone).";
       return;
     }
+    track = stream.getVideoTracks()[0];
+    log("2. Cámara abierta: " + (track?.label || "sin nombre"));
     video.muted = true; video.setAttribute("playsinline", ""); video.setAttribute("autoplay", "");
     video.srcObject = stream;
-    try { await withTimeout(video.play(), 5000); } catch {}
-    track = stream.getVideoTracks()[0];
-    try { await track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }); } catch {}
+    $("camOver").hidden = true;                       // se ve la imagen aunque lo demás tarde
+    video.play().then(() => log("3. Vídeo en marcha"), e => log("✗ Vídeo: " + (e?.name || e)));
+    withTimeout(track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }), 2000).catch(() => {});
     try { if (track.getCapabilities?.().torch) $("torchBtn").hidden = false; } catch {}
-    await setupDecoders();
-    if (!native && !zx) { $("camMsg").textContent = "No se pudo cargar el lector de códigos. Conéctate a internet la primera vez y recarga."; $("startBtn").disabled = false; return; }
-    try { await navigator.wakeLock?.request("screen"); } catch {}
+    try { await withTimeout(setupDecoders(), 4000); } catch { log("✗ Lector: tardó demasiado"); }
+    log("4. Lector: " + (native ? "del móvil" : zx ? "ZXing" : "NINGUNO"));
+    if (!native && !zx) {
+      $("camOver").hidden = false; $("startBtn").disabled = false;
+      $("camMsg").textContent = "No se pudo cargar el lector de códigos. Comprueba que tienes internet y recarga la página.";
+      return;
+    }
+    navigator.wakeLock?.request("screen").catch(() => {});
     beep(true);
-    $("camOver").hidden = true; running = true; loop();
+    running = true; loop();
+    log("5. Escaneando");
   }
+
+  // ---------- modo foto (plan B) ----------
+  async function decodeFile(file) {
+    if (!native && !zx) await withTimeout(setupDecoders(), 4000).catch(() => {});
+    const bmp = await createImageBitmap(file);
+    const found = new Set();
+    if (native) { try { (await native.detect(bmp)).forEach(b => found.add(b.rawValue)); } catch {} }
+    if (!found.size && zx) {
+      const Z = window.ZXing, c = document.createElement("canvas"), x = c.getContext("2d");
+      for (const max of [1600, 1100]) for (const rot of [0, 1]) {
+        const k = Math.min(1, max / Math.max(bmp.width, bmp.height)), w = Math.round(bmp.width * k), h = Math.round(bmp.height * k);
+        if (rot) { c.width = h; c.height = w; x.save(); x.translate(h, 0); x.rotate(Math.PI / 2); x.drawImage(bmp, 0, 0, w, h); x.restore(); }
+        else { c.width = w; c.height = h; x.drawImage(bmp, 0, 0, w, h); }
+        try { found.add(zx.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(c)))).getText()); zx.reset(); break; }
+        catch { try { zx.reset(); } catch {} }
+      }
+    }
+    return [...found].map(v => String(v).replace(/\D/g, "")).filter(v => VALID.test(v));
+  }
+  $("photoIn").addEventListener("change", async e => {
+    const files = [...e.target.files]; e.target.value = "";
+    let n = 0, dup = 0, bad = 0;
+    for (const f of files) {
+      flashMsg("Leyendo foto…");
+      let codes = []; try { codes = await decodeFile(f); } catch {}
+      if (!codes.length) { bad++; continue; }
+      for (const v of codes) { const ok = add(v, "Escaneada"); ok ? n++ : dup++; if (files.length === 1) show(v, ok); }
+    }
+    flashMsg(bad && !n && !dup ? "No se lee el código. Repite la foto más cerca y sin mover." : `${n} añadidas · ${dup} ya estaban${bad ? ` · ${bad} sin leer` : ""}`, bad && !n);
+    render();
+  });
   $("startBtn").addEventListener("click", start);
   $("pauseBtn").addEventListener("click", () => {
     paused = !paused; $("pauseBtn").setAttribute("aria-pressed", paused); $("pauseBtn").textContent = paused ? "Reanudar" : "Pausar";
