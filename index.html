@@ -83,6 +83,21 @@ dialog h3{font-family:var(--f-display);font-weight:500;text-transform:uppercase;
 dialog input{width:100%;background:var(--bg);color:var(--ink);border:1.5px solid var(--line);border-radius:2px;padding:10px;font-size:16px;margin:8px 0}
 dialog .row{display:flex;gap:8px;justify-content:flex-end}
 .ver{font-size:.7rem;color:var(--muted);text-align:center}
+.stats{background:var(--panel);border:1.5px solid var(--line);border-radius:3px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.stats .big{display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums}
+.stats .big b{font-family:var(--f-display);font-weight:400;font-size:2.4rem;line-height:1}
+.stats .big span{color:var(--muted)}
+.stats .big em{margin-left:auto;font-style:normal;font-family:var(--f-display);font-size:1.4rem}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);transition:width .3s}
+.tabs{display:flex;gap:6px}
+.tab{flex:1;background:var(--panel);border:1.5px solid var(--line);border-radius:3px;padding:9px 6px;cursor:pointer;font-weight:500;font-size:.85rem;color:var(--ink);line-height:1.15}
+.tab b{display:block;font-family:var(--f-display);font-size:1.35rem;font-weight:500;font-variant-numeric:tabular-nums}
+.tab[aria-selected=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tab.t-ok b{color:var(--ok)} .tab.t-miss b{color:var(--bad)} .tab.t-out b{color:var(--warn)}
+.tab[aria-selected=true] b{color:#fff}
+li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a77a00;background:#fdf3d6;border-radius:2px;padding:2px 6px}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.8rem;padding:6px}
 @media (prefers-reduced-motion:reduce){li.new{animation:none}}
 </style>
 </head>
@@ -106,8 +121,13 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     <select id="recSel" aria-label="Recuento"></select>
     <div class="count"><b id="count">0</b><span>tablas</span></div>
   </div>
+  <div class="stats" id="stats" hidden>
+    <div class="big"><b id="sRead">0</b><span>de <span id="sTotal">0</span> leídas</span><em id="sPct">0%</em></div>
+    <div class="bar"><i id="sBar" style="width:0"></i></div>
+  </div>
   <div class="actions">
-    <button class="btn primary" id="xlsxBtn" type="button">Exportar Excel</button>
+    <span class="btn primary">Cargar inventario<input type="file" id="invIn" accept=".xlsx,.xls,.csv" aria-label="Cargar Excel del inventario"></span>
+    <button class="btn" id="xlsxBtn" type="button">Exportar Excel</button>
     <button class="btn" id="newRecBtn" type="button">Nuevo recuento</button>
   </div>
   <form class="manual" id="manualForm" autocomplete="off">
@@ -115,12 +135,18 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     <button class="btn" type="submit" style="flex:0 0 auto">Añadir</button>
   </form>
   <div class="msg" id="msg"></div>
-  <h2>Tablas leídas</h2>
+  <div class="tabs" id="tabs" role="tablist" hidden>
+    <button class="tab t-ok" type="button" role="tab" data-v="read" aria-selected="true"><b id="tRead">0</b>Leídas</button>
+    <button class="tab t-miss" type="button" role="tab" data-v="miss" aria-selected="false"><b id="tMiss">0</b>Faltan</button>
+    <button class="tab t-out" type="button" role="tab" data-v="out" aria-selected="false"><b id="tOut">0</b>Fuera de inventario</button>
+  </div>
+  <h2 id="listTitle">Tablas leídas</h2>
   <ol id="list"></ol>
   <div class="actions">
-    <span class="btn">Importar Excel<input type="file" id="importIn" accept=".xlsx,.xls,.csv" aria-label="Importar Excel"></span>
+    <span class="btn">Importar leídas desde Excel<input type="file" id="importIn" accept=".xlsx,.xls,.csv" aria-label="Importar tablas leídas desde Excel"></span>
   </div>
-  <p class="ver">versión 7</p>
+  <p style="text-align:center;margin:0"><button class="link" id="dropInv" type="button" hidden>Quitar el inventario cargado de este recuento</button></p>
+  <p class="ver">versión 9</p>
 </section>
 
 <dialog id="recDlg">
@@ -132,6 +158,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   </form>
 </dialog>
 
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
@@ -145,15 +172,19 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
   // ---------- datos (solo números, en el móvil; no se guardan fotos) ----------
-  let DB = { recuentos: [], tablas: [], actual: "" };
-  try { const o = JSON.parse(localStorage.getItem(KEY) || "{}"); DB.recuentos = o.recuentos || []; DB.tablas = o.tablas || []; DB.actual = o.actual || ""; } catch {}
+  let DB = { recuentos: [], tablas: [], actual: "", esperadas: {} };
+  try { const o = JSON.parse(localStorage.getItem(KEY) || "{}"); DB.recuentos = o.recuentos || []; DB.tablas = o.tablas || []; DB.actual = o.actual || ""; DB.esperadas = o.esperadas || {}; } catch {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch { flashMsg("No se pudo guardar en el móvil. Exporta el Excel.", true); } };
   if (!DB.recuentos.length) { const d = new Date(); DB.recuentos = ["Recuento " + String(d.getDate()).padStart(2,"0") + "-" + String(d.getMonth()+1).padStart(2,"0")]; }
   if (!DB.recuentos.includes(DB.actual)) DB.actual = DB.recuentos[DB.recuentos.length - 1];
   save();
   try { navigator.storage?.persist?.(); } catch {}
   const current = () => DB.tablas.filter(t => t.recuento === DB.actual);
-  const has = s => DB.tablas.some(t => t.recuento === DB.actual && t.serie === s);
+  const norm = s => String(s).replace(/^0+/, "");           // 022017061199 = 22017061199 (Excel quita el 0)
+  const has = s => DB.tablas.some(t => t.recuento === DB.actual && norm(t.serie) === norm(s));
+  const expected = () => DB.esperadas[DB.actual] || [];
+  const expSet = () => new Set(expected().map(norm));
+  let view = "read";
   let newSerie = null, confirmSerie = null;
   function add(serie, metodo) {
     if (has(serie)) return false;
@@ -276,26 +307,55 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     if (!stream) { openCamera(); return; }
     shooting = true; $("shutter").disabled = true;
     showResult("busy", "Leyendo…", "", "");
-    let codes = [];
+    let codes = [], metodo = "Escaneada", lastFrame = null, ocrErr = "";
     try {
       // prueba varios fotogramas seguidos (~1 s) para que un pequeño movimiento no lo estropee
       for (let i = 0; i < 6 && !codes.length; i++) {
         const f = await grab();
-        if (f) { codes = await decodeFrame(f.src, f.w, f.h, i < 4); f.close(); }
+        if (f) {
+          codes = await decodeFrame(f.src, f.w, f.h, i < 4);
+          if (!codes.length && i === 0) lastFrame = toJpeg(f.src, f.w, f.h);   // por si hay que leer el dorso
+          f.close();
+        }
         if (!codes.length) await sleep(80);
       }
     } catch {}
+    // sin código de barras: leer el número impreso en el dorso con el lector en la nube
+    if (!codes.length && lastFrame && window.OCR_URL) {
+      showResult("busy", "Leyendo el dorso…", "", "");
+      try { const s = await readBack(lastFrame); if (s) { codes = [s]; metodo = "Leída del dorso"; } }
+      catch (e) { ocrErr = e.message || ""; }
+    }
     if (!codes.length) {
-      showResult("bad", "No se lee", "", "Acércate, encaja el código en el recuadro y repite");
+      showResult("bad", "No se lee", "", ocrErr || "Acércate, encaja el código o el número en el recuadro y repite");
       feedback(null);
     } else {
-      const res = codes.map(v => ({ v, ok: add(v, "Escaneada") }));
+      const res = codes.map(v => ({ v, ok: add(v, metodo) }));
       const nuevas = res.filter(r => r.ok);
-      if (nuevas.length) { showResult("ok", nuevas.length > 1 ? `${nuevas.length} guardadas` : "Guardada", nuevas.map(r => r.v).join("\n"), res.length > nuevas.length ? "Alguna ya estaba" : ""); feedback(true); }
+      const es = expSet(), fuera = expected().length ? nuevas.filter(r => !es.has(norm(r.v))) : [];
+      if (nuevas.length) { showResult("ok", nuevas.length > 1 ? `${nuevas.length} guardadas` : "Guardada", nuevas.map(r => r.v).join("\n"), fuera.length ? "Ojo: no está en el inventario cargado" : res.length > nuevas.length ? "Alguna ya estaba" : ""); feedback(true); }
       else { showResult("dup", "Repetida", res.map(r => r.v).join("\n"), "No se ha guardado otra vez"); feedback(false); }
       render();
     }
     shooting = false; $("shutter").disabled = false;
+  }
+  function toJpeg(src, w, h) {
+    const k = Math.min(1, 1568 / Math.max(w, h));
+    const c = document.createElement("canvas"); c.width = Math.round(w * k); c.height = Math.round(h * k);
+    c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", .85).split(",")[1];
+  }
+  async function readBack(b64) {
+    if (!navigator.onLine) throw new Error("Sin conexión: no se puede leer el dorso");
+    let r;
+    try {
+      r = await withTimeout(fetch(window.OCR_URL, { method: "POST", headers: { "Content-Type": "application/json", "X-App-Key": window.OCR_KEY || "" }, body: JSON.stringify({ image: b64 }) }), 20000);
+    } catch { throw new Error("Sin conexión con el lector del dorso"); }
+    if (r.status === 401 || r.status === 403) throw new Error("Lector del dorso no autorizado: revisa la configuración");
+    if (!r.ok) throw new Error("El lector del dorso ha fallado (" + r.status + ")");
+    const j = await r.json();
+    const v = String(j.serie || "").replace(/\D/g, "");
+    return VALID.test(v) ? v : null;
   }
   function showResult(kind, title, num, sub) {
     const r = $("result"); r.hidden = false; r.className = "result " + kind;
@@ -327,15 +387,36 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   // ---------- lista ----------
   function render() {
     $("recSel").innerHTML = DB.recuentos.map(r => `<option ${r === DB.actual ? "selected" : ""}>${esc(r)}</option>`).join("");
-    const list = current().slice().reverse();
-    $("count").textContent = list.length;
+    const all = current().slice().reverse(), exp = expected(), es = expSet();
+    const readSet = new Set(all.map(t => norm(t.serie)));
+    const inv = exp.length > 0;
+    const okRead = inv ? all.filter(t => es.has(norm(t.serie))).length : all.length;
+    const miss = inv ? exp.filter(s => !readSet.has(norm(s))) : [];
+    const out = inv ? all.filter(t => !es.has(norm(t.serie))) : [];
+    $("count").textContent = all.length;
+    $("stats").hidden = !inv; $("tabs").hidden = !inv; $("dropInv").hidden = !inv;
+    if (!inv) view = "read";
+    if (inv) {
+      $("sRead").textContent = okRead; $("sTotal").textContent = exp.length;
+      const pct = Math.floor(okRead * 100 / exp.length); $("sPct").textContent = pct + "%"; $("sBar").style.width = pct + "%";
+      $("tRead").textContent = all.length; $("tMiss").textContent = miss.length; $("tOut").textContent = out.length;
+      document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.v === view));
+    }
+    $("listTitle").textContent = view === "miss" ? "Faltan por leer" : view === "out" ? "Leídas que no están en el inventario" : "Tablas leídas";
+    if (view === "miss") {
+      $("list").innerHTML = !miss.length ? `<li class="empty">No falta ninguna. Inventario completo.</li>`
+        : miss.map(s => `<li><span class="n">${esc(s)}</span></li>`).join("");
+      newSerie = null; return;
+    }
+    const list = view === "out" ? out : all;
     $("list").innerHTML = !list.length
-      ? `<li class="empty">Todavía no hay tablas en este recuento.</li>`
+      ? `<li class="empty">${view === "out" ? "Ninguna tabla leída fuera del inventario." : "Todavía no hay tablas en este recuento."}</li>`
       : list.map(t => {
           const h = new Date(t.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
           if (t.serie === confirmSerie) return `<li class="confirm" data-s="${esc(t.serie)}"><span class="n">${esc(t.serie)}</span><button class="x" data-a="yes" type="button" style="color:var(--bad);font-weight:600">Quitar</button><button class="x" data-a="no" type="button">Cancelar</button></li>`;
-          const how = t.metodo === "Escrito a mano" ? "a mano" : t.metodo === "Importado" ? "importada" : "foto";
-          return `<li data-s="${esc(t.serie)}" class="${t.serie === newSerie ? "new" : ""}"><span class="n">${esc(t.serie)}</span><span class="meta">${h}<br>${how}</span><button class="x" data-a="ask" type="button" aria-label="Quitar ${esc(t.serie)}">✕</button></li>`;
+          const how = t.metodo === "Escrito a mano" ? "a mano" : t.metodo === "Importado" ? "importada" : t.metodo === "Leída del dorso" ? "dorso" : "foto";
+          const tag = inv && !es.has(norm(t.serie)) ? `<span class="tag">Fuera</span>` : "";
+          return `<li data-s="${esc(t.serie)}" class="${t.serie === newSerie ? "new" : ""}"><span class="n">${esc(t.serie)}</span>${tag}<span class="meta">${h}<br>${how}</span><button class="x" data-a="ask" type="button" aria-label="Quitar ${esc(t.serie)}">✕</button></li>`;
         }).join("");
     newSerie = null;
   }
@@ -348,6 +429,12 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
     render();
   });
   $("recSel").addEventListener("change", e => { DB.actual = e.target.value; save(); render(); });
+  $("tabs").addEventListener("click", e => { const b = e.target.closest(".tab"); if (!b) return; view = b.dataset.v; confirmSerie = null; render(); });
+  let dropAsk = false;
+  $("dropInv").addEventListener("click", () => {
+    if (!dropAsk) { dropAsk = true; $("dropInv").textContent = "Pulsa otra vez para confirmar (las tablas leídas no se borran)"; setTimeout(() => { dropAsk = false; $("dropInv").textContent = "Quitar el inventario cargado de este recuento"; }, 4000); return; }
+    delete DB.esperadas[DB.actual]; dropAsk = false; $("dropInv").textContent = "Quitar el inventario cargado de este recuento"; save(); render(); flashMsg("Inventario quitado.");
+  });
   $("newRecBtn").addEventListener("click", () => { $("recName").value = ""; $("recDlg").showModal(); });
   $("recDlg").addEventListener("close", () => {
     const v = $("recName").value.trim();
@@ -364,25 +451,60 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   });
 
   // ---------- Excel ----------
+  // Lee todas las celdas de la primera hoja y se queda con la columna que más nº de tabla tiene.
+  async function readSeries(file) {
+    const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: "" });
+    const cols = {};
+    rows.forEach(r => r.forEach((c, i) => {
+      const v = typeof c === "number" ? c.toFixed(0) : String(c).trim().replace(/\D/g, "");
+      if (VALID.test(v)) (cols[i] = cols[i] || []).push(v);
+    }));
+    const best = Object.values(cols).sort((a, b) => b.length - a.length)[0] || [];
+    const seen = new Set(), out = [];
+    best.forEach(v => { if (!seen.has(norm(v))) { seen.add(norm(v)); out.push(v); } });
+    return { series: out, dups: best.length - out.length };
+  }
+  $("invIn").addEventListener("change", async e => {
+    const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+    if (!window.XLSX) { flashMsg("Hace falta internet para leer el Excel.", true); return; }
+    try {
+      const { series, dups } = await readSeries(f);
+      if (!series.length) { flashMsg("No he encontrado números de 11 cifras o más en ese Excel.", true); return; }
+      DB.esperadas[DB.actual] = series; save(); view = "miss"; render();
+      flashMsg(`Inventario cargado en «${DB.actual}»: ${series.length} tablas${dups ? ` (${dups} repetidas en el Excel, contadas una vez)` : ""}.`);
+    } catch { flashMsg("No se pudo leer ese Excel.", true); }
+  });
   $("xlsxBtn").addEventListener("click", () => {
-    const rows = current();
-    if (!rows.length) { flashMsg("No hay tablas que exportar en este recuento."); return; }
+    const rows = current(), exp = expected(), es = expSet(), inv = exp.length > 0;
+    if (!rows.length && !inv) { flashMsg("No hay tablas que exportar en este recuento."); return; }
     if (!window.XLSX) { flashMsg("Hace falta internet la primera vez para generar el Excel.", true); return; }
-    const aoa = [["Nº tabla", "Recuento", "Fecha y hora", "Cómo se leyó"]];
-    rows.forEach(t => aoa.push([{ t: "s", v: t.serie }, t.recuento, new Date(t.ts).toLocaleString("es-ES"), t.metodo]));
-    const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [{wch:16},{wch:22},{wch:20},{wch:18}];
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Tablas");
+    const wb = XLSX.utils.book_new();
+    const aoa = [["Nº tabla", "Recuento", "Fecha y hora", "Cómo se leyó"].concat(inv ? ["¿En inventario?"] : [])];
+    rows.forEach(t => aoa.push([{ t: "s", v: t.serie }, t.recuento, new Date(t.ts).toLocaleString("es-ES"), t.metodo].concat(inv ? [es.has(norm(t.serie)) ? "Sí" : "No"] : [])));
+    const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [{wch:16},{wch:22},{wch:20},{wch:18},{wch:15}];
+    if (inv) {
+      const readSet = new Set(rows.map(t => norm(t.serie)));
+      const miss = exp.filter(s => !readSet.has(norm(s)));
+      const okRead = rows.filter(t => es.has(norm(t.serie))).length;
+      const res = XLSX.utils.aoa_to_sheet([
+        ["Recuento", DB.actual], ["Fecha", new Date().toLocaleString("es-ES")],
+        ["Tablas en inventario", exp.length], ["Leídas del inventario", okRead], ["Faltan por leer", miss.length],
+        ["Leídas fuera del inventario", rows.length - okRead], ["% completado", exp.length ? Math.floor(okRead * 100 / exp.length) / 100 : 0]]);
+      res["!cols"] = [{wch:28},{wch:22}]; if (res.B7) res.B7.z = "0%";
+      XLSX.utils.book_append_sheet(wb, res, "Resumen");
+      XLSX.utils.book_append_sheet(wb, ws, "Leídas");
+      const wm = XLSX.utils.aoa_to_sheet([["Nº tabla"]].concat(miss.map(s => [{ t: "s", v: s }]))); wm["!cols"] = [{wch:16}];
+      XLSX.utils.book_append_sheet(wb, wm, "Faltan");
+    } else XLSX.utils.book_append_sheet(wb, ws, "Tablas");
     XLSX.writeFile(wb, "Tablas_" + DB.actual.replace(/[^\w\-]+/g, "_") + ".xlsx");
   });
   $("importIn").addEventListener("change", async e => {
     const f = e.target.files[0]; e.target.value = ""; if (!f || !window.XLSX) return;
     try {
-      const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+      const { series } = await readSeries(f);
       let n = 0, dup = 0;
-      XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false }).forEach(row => {
-        const v = String(row[0] ?? "").replace(/\D/g, "");
-        if (VALID.test(v)) add(v, "Importado") ? n++ : dup++;
-      });
+      series.forEach(v => add(v, "Importado") ? n++ : dup++);
       render(); flashMsg(`Importadas ${n} tablas en «${DB.actual}»${dup ? ` (${dup} ya estaban)` : ""}.`);
     } catch { flashMsg("No se pudo leer ese archivo. Usa un Excel con los números en la primera columna.", true); }
   });
