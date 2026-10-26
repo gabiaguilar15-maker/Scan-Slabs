@@ -1,7 +1,7 @@
 // Guarda la app y sus librerías para que funcione sin cobertura en el almacén.
-const CACHE = "escaner-tablas-v5";
+const CACHE = "gabriel-inventario-v7";
 const ASSETS = [
-  "./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png",
+  "./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./logo.png",
   "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
 ];

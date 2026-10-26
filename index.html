@@ -3,86 +3,91 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#14181c">
-<title>Escáner de tablas</title>
+<meta name="theme-color" content="#ffffff">
+<title>Gabriel Inventario</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
 :root{
-  --bg:#14181c; --panel:#1d2329; --ink:#e7eaed; --muted:#9aa5b0; --line:#2e363e;
-  --signal:#f2c230; --ok:#2fa865; --warn:#e8b021; --bad:#d94a3a;
-  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
-  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  /* Corporativo: piedra clara, negro y gris; el color solo para el semáforo */
+  --bg:#f3f2ef; --panel:#ffffff; --ink:#111111; --muted:#6e6c68; --line:#dcdad5;
+  --signal:#111111; --ok:#2e9e5b; --warn:#e8b021; --bad:#d64535;
+  --f-display:"Jost","Futura","Century Gothic",Arial,sans-serif;
+  --f-body:"Jost",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
-  color-scheme:dark;
+  color-scheme:light;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;-webkit-tap-highlight-color:transparent}
 button,input,select{font:inherit}
 body{padding-top:env(safe-area-inset-top,0px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:#fff;z-index:10}
 /* ---- cámara ---- */
 .cam{position:relative;height:58vh;min-height:300px;background:#000;overflow:hidden}
 .cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .guide{position:absolute;left:7%;right:7%;top:20%;bottom:30%;border:3px solid rgba(255,255,255,.85);border-radius:10px;box-shadow:0 0 0 100vmax rgba(0,0,0,.28);pointer-events:none}
 .guide span{position:absolute;top:-28px;left:0;right:0;text-align:center;font-size:.8rem;font-weight:600;text-shadow:0 1px 3px #000}
 .shutter{position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:84px;height:84px;border-radius:50%;
-  border:6px solid #fff;background:var(--signal);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+  border:5px solid rgba(255,255,255,.95);background:#fff;outline:3px solid #111;outline-offset:-11px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.5)}
 .shutter:active{transform:translateX(-50%) scale(.93)}
-.shutter:disabled{background:#777}
+.shutter:disabled{background:#9a9894}
 .shutter:focus-visible{outline:3px solid var(--signal);outline-offset:4px}
 .torch{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(36px + env(safe-area-inset-bottom,0px));background:rgba(20,24,28,.8);color:var(--ink);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:9px 13px;font-weight:600;font-size:.85rem;cursor:pointer}
 .torch[aria-pressed=true]{background:var(--signal);color:#14181c}
 .result{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:20px;color:#fff;pointer-events:none}
-.result b{font-family:var(--f-display);font-size:3rem;text-transform:uppercase;letter-spacing:.03em;line-height:1}
+.result b{font-family:var(--f-display);font-weight:500;font-size:2.4rem;text-transform:uppercase;letter-spacing:.14em;line-height:1}
 .result span{font-family:var(--f-mono);font-weight:600;font-size:1.5rem;word-break:break-all}
 .result small{font-size:1rem;font-weight:500}
 .result.ok{background:rgba(47,168,101,.93)} .result.dup{background:rgba(232,176,33,.95);color:#14181c} .result.bad{background:rgba(217,74,58,.93)}
 .result.busy{background:rgba(0,0,0,.45)}
 .over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;background:#0d1013}
 .over p{margin:0;color:var(--muted);max-width:32ch}
-.big-btn{background:var(--signal);color:#14181c;border:0;border-radius:10px;padding:16px 26px;font-family:var(--f-display);font-weight:700;font-size:1.6rem;text-transform:uppercase;letter-spacing:.03em;cursor:pointer}
+.big-btn{background:#fff;color:#111;border:0;border-radius:2px;padding:16px 28px;font-family:var(--f-display);font-weight:500;font-size:1.05rem;text-transform:uppercase;letter-spacing:.24em;cursor:pointer}
 .big-btn:disabled{opacity:.6}
 #diag{margin:0;font-family:var(--f-mono);font-size:.72rem;color:var(--muted);white-space:pre-wrap;text-align:left}
 /* ---- panel ---- */
 .panel{display:flex;flex-direction:column;gap:10px;max-width:560px;margin:0 auto;padding:12px max(14px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+.brand{background:#fff;display:flex;align-items:center;justify-content:center;padding:12px max(16px,env(safe-area-inset-right,0px)) 11px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.brand img{height:26px;width:auto;display:block}
 .top{display:flex;align-items:center;gap:10px}
-.top select{flex:1;min-width:0;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:10px;font-size:16px}
+.top select{flex:1;min-width:0;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:2px;padding:10px;font-size:16px}
 .count{text-align:right;line-height:1}
-.count b{display:block;font-family:var(--f-display);font-size:2.3rem;font-variant-numeric:tabular-nums}
+.count b{display:block;font-family:var(--f-display);font-weight:300;font-size:2.4rem;font-variant-numeric:tabular-nums}
 .count span{font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
-.btn{flex:1 1 auto;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:10px 12px;font-weight:600;cursor:pointer;position:relative;white-space:nowrap;text-align:center}
+.btn{flex:1 1 auto;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:2px;padding:10px 12px;font-weight:600;cursor:pointer;position:relative;white-space:nowrap;text-align:center}
 .btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
 .btn:focus-visible,.x:focus-visible{outline:3px solid var(--signal);outline-offset:1px}
 form.manual{display:flex;gap:8px}
-form.manual input{flex:1;min-width:0;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:10px;font-size:16px}
-h2{font-family:var(--f-display);font-size:1.2rem;text-transform:uppercase;letter-spacing:.04em;margin:4px 0 0}
-ol{list-style:none;margin:0;padding:0;background:var(--panel);border:1.5px solid var(--line);border-radius:8px;overflow:hidden}
+form.manual input{flex:1;min-width:0;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:2px;padding:10px;font-size:16px}
+h2{font-family:var(--f-display);font-weight:500;font-size:.8rem;text-transform:uppercase;letter-spacing:.24em;margin:8px 0 0;color:var(--muted)}
+ol{list-style:none;margin:0;padding:0;background:var(--panel);border:1.5px solid var(--line);border-radius:3px;overflow:hidden}
 li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line);min-height:46px}
 li:first-child{border-top:0}
 li .n{flex:1;min-width:0;font-family:var(--f-mono);font-weight:600;word-break:break-all;font-variant-numeric:tabular-nums}
 li .meta{font-size:.72rem;color:var(--muted);text-align:right}
 li.new{animation:hl 1.4s ease-out}
-@keyframes hl{from{background:#1f4a31}to{background:transparent}}
-li.confirm{background:#3a1c18}
+@keyframes hl{from{background:#d8f0e1}to{background:transparent}}
+li.confirm{background:#fbe4e1}
 .x{background:none;border:0;color:var(--muted);padding:8px;cursor:pointer;border-radius:4px;font-size:.85rem}
 .empty{padding:16px;text-align:center;color:var(--muted)}
 .msg{font-size:.85rem;color:var(--muted);min-height:1.2em}
 dialog{background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;max-width:min(92vw,420px)}
-dialog::backdrop{background:rgba(0,0,0,.6)}
-dialog h3{font-family:var(--f-display);text-transform:uppercase;margin:0 0 8px;font-size:1.3rem}
-dialog input{width:100%;background:var(--bg);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:10px;font-size:16px;margin:8px 0}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h3{font-family:var(--f-display);font-weight:500;text-transform:uppercase;letter-spacing:.2em;margin:0 0 8px;font-size:1rem}
+dialog input{width:100%;background:var(--bg);color:var(--ink);border:1.5px solid var(--line);border-radius:2px;padding:10px;font-size:16px;margin:8px 0}
 dialog .row{display:flex;gap:8px;justify-content:flex-end}
 .ver{font-size:.7rem;color:var(--muted);text-align:center}
 @media (prefers-reduced-motion:reduce){li.new{animation:none}}
 </style>
 </head>
 <body>
+<header class="brand"><img src="logo.png" alt="Neolith" width="123" height="26"></header>
 <section class="cam" id="cam">
   <video id="video" playsinline muted autoplay></video>
   <div class="guide"><span>Encaja el código de barras aquí</span></div>
@@ -91,7 +96,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   <div class="result" id="result" hidden></div>
   <div class="over" id="over">
     <button class="big-btn" id="startBtn" type="button">Abrir cámara</button>
-    <p id="camMsg">Pulsa el botón amarillo para cada etiqueta. Verde = guardada · Amarillo = repetida · Rojo = repetir foto.</p>
+    <p id="camMsg">Pulsa el botón blanco para cada etiqueta. Verde = guardada · Amarillo = repetida · Rojo = repetir foto.</p>
     <pre id="diag"></pre>
   </div>
 </section>
@@ -115,7 +120,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   <div class="actions">
     <span class="btn">Importar Excel<input type="file" id="importIn" accept=".xlsx,.xls,.csv" aria-label="Importar Excel"></span>
   </div>
-  <p class="ver">versión 5 · disparo directo</p>
+  <p class="ver">versión 7</p>
 </section>
 
 <dialog id="recDlg">
@@ -133,7 +138,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
 (() => {
   "use strict";
   const $ = id => document.getElementById(id);
-  const VALID = /^0?2\d{10,11}$/;   // 220250163749 · antiguas 022017061199 / 22016767370
+  const VALID = /^\d{11,}$/;   // nº de tabla: 11 cifras o más
   const KEY = "escaner-tablas-v1";
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej({ name: "Timeout" }), ms))]);
@@ -353,7 +358,7 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
   $("manualForm").addEventListener("submit", e => {
     e.preventDefault();
     const v = $("manual").value.replace(/\D/g, "");
-    if (!VALID.test(v)) { flashMsg("Un nº de tabla tiene 12 cifras y empieza por 2 (ej. 220250163749).", true); return; }
+    if (!VALID.test(v)) { flashMsg("Un nº de tabla tiene 11 cifras o más (ej. 220250163749).", true); return; }
     flashMsg(add(v, "Escrito a mano") ? `Guardada ${v}` : `${v} ya estaba en el recuento`);
     $("manual").value = ""; render();
   });
