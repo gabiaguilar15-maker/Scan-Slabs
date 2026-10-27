@@ -53,6 +53,20 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .panel{display:flex;flex-direction:column;gap:10px;max-width:560px;margin:0 auto;padding:12px max(14px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
 .brand{background:#fff;display:flex;align-items:center;justify-content:center;padding:12px max(16px,env(safe-area-inset-right,0px)) 11px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
 .brand img{height:26px;width:auto;display:block}
+.brand{flex-direction:column;gap:6px}
+.who{font-size:.78rem;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.who b{color:var(--ink);font-weight:500}
+.who button{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;padding:2px}
+.login{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;display:flex;flex-direction:column;align-items:center;
+  padding:calc(40px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) 30px max(20px,env(safe-area-inset-left,0px))}
+.login img{height:40px;width:auto;margin-bottom:28px}
+.login form{width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px}
+.login h1{font-family:var(--f-display);font-weight:500;font-size:1rem;letter-spacing:.28em;text-transform:uppercase;margin:0 0 6px;text-align:center}
+.login label{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.login input,.login select{font:inherit;font-size:16px;letter-spacing:normal;text-transform:none;color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:2px;padding:12px}
+.login .go{background:var(--ink);color:#fff;border:0;border-radius:2px;padding:15px;font-family:var(--f-display);font-weight:500;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;margin-top:6px}
+.login .err{color:var(--bad);font-size:.85rem;min-height:1.2em;text-align:center}
+.login .note{color:var(--muted);font-size:.78rem;text-align:center}
 .top{display:flex;align-items:center;gap:10px}
 .top select{flex:1;min-width:0;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:2px;padding:10px;font-size:16px}
 .count{text-align:right;line-height:1}
@@ -102,7 +116,20 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
 </style>
 </head>
 <body>
-<header class="brand"><img src="logo.png" alt="Neolith" width="123" height="26"></header>
+<div class="login" id="login">
+  <img src="logo.png" alt="Neolith" width="185" height="40">
+  <form id="loginForm" autocomplete="off">
+    <h1>Identifícate</h1>
+    <label id="lNameSel" hidden>Nombre<select id="uSel"></select></label>
+    <label id="lNameTxt">Nombre<input id="uTxt" placeholder="Tu nombre" autocomplete="name"></label>
+    <label id="lPin" hidden>PIN<input id="uPin" inputmode="numeric" type="password" maxlength="8" placeholder="••••"></label>
+    <label>Centro<select id="uCentro"></select></label>
+    <div class="err" id="loginErr"></div>
+    <button class="go" type="submit">Entrar</button>
+    <p class="note" id="loginNote"></p>
+  </form>
+</div>
+<header class="brand"><img src="logo.png" alt="Neolith" width="123" height="26"><div class="who" id="who"></div></header>
 <section class="cam" id="cam">
   <video id="video" playsinline muted autoplay></video>
   <div class="guide"><span>Encaja el código de barras aquí</span></div>
@@ -149,7 +176,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <span class="btn">Importar leídas desde Excel<input type="file" id="importIn" accept=".xlsx,.xls,.csv" aria-label="Importar tablas leídas desde Excel"></span>
   </div>
   <p style="text-align:center;margin:0"><button class="link" id="dropInv" type="button" hidden>Quitar el inventario cargado de este recuento</button></p>
-  <p class="ver">versión 10</p>
+  <p class="ver">versión 13</p>
 </section>
 
 <dialog id="invDlg">
@@ -184,7 +211,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
 
   // ---------- datos (solo números, en el móvil; no se guardan fotos) ----------
   let DB = { recuentos: [], tablas: [], actual: "", esperadas: {} };
-  try { const o = JSON.parse(localStorage.getItem(KEY) || "{}"); DB.recuentos = o.recuentos || []; DB.tablas = o.tablas || []; DB.actual = o.actual || ""; DB.esperadas = o.esperadas || {}; } catch {}
+  try { const o = JSON.parse(localStorage.getItem(KEY) || "{}"); DB.recuentos = o.recuentos || []; DB.tablas = o.tablas || []; DB.actual = o.actual || ""; DB.esperadas = o.esperadas || {}; DB.otros = o.otros || {}; } catch {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch { flashMsg("No se pudo guardar en el móvil. Exporta el Excel.", true); } };
   if (!DB.recuentos.length) { const d = new Date(); DB.recuentos = ["Recuento " + String(d.getDate()).padStart(2,"0") + "-" + String(d.getMonth()+1).padStart(2,"0")]; }
   if (!DB.recuentos.includes(DB.actual)) DB.actual = DB.recuentos[DB.recuentos.length - 1];
@@ -199,7 +226,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
   let newSerie = null, confirmSerie = null;
   function add(serie, metodo) {
     if (has(serie)) return false;
-    DB.tablas.push({ serie, recuento: DB.actual, metodo, ts: new Date().toISOString() });
+    DB.tablas.push({ serie, recuento: DB.actual, metodo, ts: new Date().toISOString(), usuario: SES?.nombre || "", centro: SES?.centro || "" });
     save(); newSerie = serie; return true;
   }
 
@@ -344,7 +371,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       const res = codes.map(v => ({ v, ok: add(v, metodo) }));
       const nuevas = res.filter(r => r.ok);
       const es = expSet(), fuera = expected().length ? nuevas.filter(r => !es.has(norm(r.v))) : [];
-      if (nuevas.length) { showResult("ok", nuevas.length > 1 ? `${nuevas.length} guardadas` : "Guardada", nuevas.map(r => r.v).join("\n"), fuera.length ? "Ojo: no está en el inventario cargado" : res.length > nuevas.length ? "Alguna ya estaba" : ""); feedback(true); }
+      if (nuevas.length) { showResult("ok", nuevas.length > 1 ? `${nuevas.length} guardadas` : "Guardada", nuevas.map(r => r.v).join("\n"), fuera.length ? (otroCentro(fuera[0].v) ? `Ojo: es del centro ${nameC(otroCentro(fuera[0].v))}` : "Ojo: no está en el inventario cargado") : res.length > nuevas.length ? "Alguna ya estaba" : ""); feedback(true); }
       else { showResult("dup", "Repetida", res.map(r => r.v).join("\n"), "No se ha guardado otra vez"); feedback(false); }
       render();
     }
@@ -426,7 +453,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
           const h = new Date(t.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
           if (t.serie === confirmSerie) return `<li class="confirm" data-s="${esc(t.serie)}"><span class="n">${esc(t.serie)}</span><button class="x" data-a="yes" type="button" style="color:var(--bad);font-weight:600">Quitar</button><button class="x" data-a="no" type="button">Cancelar</button></li>`;
           const how = t.metodo === "Escrito a mano" ? "a mano" : t.metodo === "Importado" ? "importada" : t.metodo === "Leída del dorso" ? "dorso" : "foto";
-          const tag = inv && !es.has(norm(t.serie)) ? `<span class="tag">Fuera</span>` : "";
+          const tag = inv && !es.has(norm(t.serie)) ? `<span class="tag">${otroCentro(t.serie) ? "Centro " + otroCentro(t.serie) : "Fuera"}</span>` : "";
           return `<li data-s="${esc(t.serie)}" class="${t.serie === newSerie ? "new" : ""}"><span class="n">${esc(t.serie)}</span>${tag}<span class="meta">${h}<br>${how}</span><button class="x" data-a="ask" type="button" aria-label="Quitar ${esc(t.serie)}">✕</button></li>`;
         }).join("");
     newSerie = null;
@@ -444,7 +471,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
   let dropAsk = false;
   $("dropInv").addEventListener("click", () => {
     if (!dropAsk) { dropAsk = true; $("dropInv").textContent = "Pulsa otra vez para confirmar (las tablas leídas no se borran)"; setTimeout(() => { dropAsk = false; $("dropInv").textContent = "Quitar el inventario cargado de este recuento"; }, 4000); return; }
-    delete DB.esperadas[DB.actual]; dropAsk = false; $("dropInv").textContent = "Quitar el inventario cargado de este recuento"; save(); render(); flashMsg("Inventario quitado.");
+    delete DB.esperadas[DB.actual]; delete DB.otros[DB.actual]; dropAsk = false; $("dropInv").textContent = "Quitar el inventario cargado de este recuento"; save(); render(); flashMsg("Inventario quitado.");
   });
   $("newRecBtn").addEventListener("click", () => { $("recName").value = ""; $("recDlg").showModal(); });
   $("recDlg").addEventListener("close", () => {
@@ -463,6 +490,8 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
 
   // ---------- Excel ----------
   // Lee todas las celdas de la primera hoja y se queda con la columna que más nº de tabla tiene.
+  // código de centro de una celda: 3-4 cifras, se quita el 0 delante (0255 = 255)
+  const cellC = c => { const t = (typeof c === "number" ? c.toFixed(0) : String(c ?? "").trim()); return /^\d{3,4}$/.test(t) ? t.replace(/^0+(?=\d{3})/, "") : ""; };
   async function readSeries(file) {
     const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: "" });
@@ -471,11 +500,75 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       const v = typeof c === "number" ? c.toFixed(0) : String(c).trim().replace(/\D/g, "");
       if (VALID.test(v)) (cols[i] = cols[i] || []).push(v);
     }));
-    const best = Object.values(cols).sort((a, b) => b.length - a.length)[0] || [];
-    const seen = new Set(), out = [];
-    best.forEach(v => { if (!seen.has(norm(v))) { seen.add(norm(v)); out.push(v); } });
-    return { series: out, dups: best.length - out.length };
+    const ranked = Object.entries(cols).sort((a, b) => b[1].length - a[1].length);
+    if (!ranked.length) return { series: [], dups: 0, centros: null };
+    const sCol = +ranked[0][0];
+    // columna de centro: la que tenga más códigos de centro conocidos (3-4 cifras, con o sin 0 delante)
+    const cnt = {}, cntAny = {}; let hdr = -1;
+    rows.forEach(r => r.forEach((c, i) => { if (/centro|planta|almac/i.test(String(c))) hdr = hdr < 0 ? i : hdr; }));
+    rows.forEach(r => {
+      const sv = typeof r[sCol] === "number" ? r[sCol].toFixed(0) : String(r[sCol] ?? "").replace(/\D/g, "");
+      if (!VALID.test(sv)) return;
+      r.forEach((c, i) => {
+        if (i === sCol) return; const raw = cellC(c); if (!raw) return;
+        cntAny[i] = (cntAny[i] || 0) + 1; if (CENTROS[raw]) cnt[i] = (cnt[i] || 0) + 1;
+      });
+    });
+    const pick = o => +((Object.entries(o).sort((a, b) => b[1] - a[1])[0] || [-1])[0]);
+    let cCol = Object.keys(cnt).length ? pick(cnt) : hdr >= 0 && cntAny[hdr] ? hdr : pick(cntAny);
+    const seen = new Set(), out = [], centros = {};
+    let total = 0;
+    rows.forEach(r => {
+      const sv = typeof r[sCol] === "number" ? r[sCol].toFixed(0) : String(r[sCol] ?? "").replace(/\D/g, "");
+      if (!VALID.test(sv)) return; total++;
+      if (seen.has(norm(sv))) return; seen.add(norm(sv)); out.push(sv);
+      if (cCol >= 0) { const c = cellC(r[cCol]); if (c) centros[sv] = c; }
+    });
+    const hasCentros = cCol >= 0 && new Set(Object.values(centros)).size >= 1 && Object.keys(centros).length >= out.length * .5;
+    return { series: out, dups: total - out.length, centros: hasCentros ? centros : null };
   }
+  // ---------- centros ----------
+  const CENTROS = {"113":"NUEVA JERSEY - USA","114":"FLORIDA - USA","115":"LOS ANGELES - USA","120":"WROCLAW - POLAND","121":"KATOWICE","131":"HARLOW - UK","132":"LEEDS - UK","150":"KEMPTON PARK","151":"CAPE TOWN - SOUTHAF","160":"VERONA - ITALY","161":"TOLENTINO - ITALY","162":"PORDENONE - ITALY","163":"TIVOLI - ITALY","164":"MILAN - ITALY","165":"ANDRIA - ITALY","166":"ROMA - ITALY","167":"OSTRA VETERE - ITALY","170":"GOTHENBURG - SWEDEN","202":"CENTRAL","250":"INTEGRAL STONE","251":"MALAGA","252":"STONE SUR","253":"NEOLITH VALLADOLID","254":"NEOLITH ARAGON","255":"NEOLITH VITORIA","256":"NEOLITH CIUDAD REAL","257":"NEO SUPERFICIES","258":"NEOLITH BALEARES","259":"NEOLITH PONTS","260":"NEOLITH BARCELONA","261":"NEOLITH GALICIA","262":"NEOLITH MADRID","2001":"NEOLITH SYDNEY","2002":"MELBOURNE PLANT","2003":"ADELAIDE PLANT","2010":"AUCKLAND - NEW ZEALAND","2011":"CHRISTCHURCH - NEW ZEALAND","2015":"NEOLITH SINGAPORE"};
+  const nameC = c => CENTROS[c] ? `${c} · ${CENTROS[c]}` : `Centro ${c}`;
+  let miCentro = ""; try { miCentro = localStorage.getItem("mi-centro") || ""; } catch {}
+  DB.otros = DB.otros || {};                     // recuento -> { serie normalizada: centro } de los demás centros
+  function centroList(centros) {
+    const n = {}; Object.values(centros).forEach(c => n[c] = (n[c] || 0) + 1);
+    return Object.entries(n).sort((a, b) => (b[0] === miCentro) - (a[0] === miCentro) || (+a[0]) - (+b[0]));
+  }
+  function applyInventory(nombreBase, data, centro) {
+    let series = data.series, nombre = nombreBase, otros = null;
+    if (centro) {
+      series = data.series.filter(s => data.centros[s] === centro);
+      nombre = nombreBase + " · " + nameC(centro);
+      otros = {}; Object.entries(data.centros).forEach(([s, c]) => { if (c !== centro) otros[norm(s)] = c; });
+      if (!SES) { miCentro = centro; try { localStorage.setItem("mi-centro", centro); } catch {} }
+    }
+    if (!DB.recuentos.includes(nombre)) DB.recuentos.push(nombre);
+    DB.actual = nombre; DB.esperadas[nombre] = series;
+    if (otros) DB.otros[nombre] = otros; else delete DB.otros[nombre];
+    save(); view = "miss"; render();
+    flashMsg(`Inventario «${nombre}»: ${series.length} tablas${data.dups ? ` (${data.dups} repetidas en el Excel, contadas una vez)` : ""}. Ya puedes escanear.`);
+  }
+  const allowed = c => !SES || SES.centros.includes("*") || SES.centros.includes(c);
+  function chooseCentro(nombreBase, data, onDone) {
+    // usa el centro del usuario; si no está en el Excel y tiene otros permitidos, le deja elegir entre esos
+    const present = new Set(Object.values(data.centros));
+    if (SES && present.has(SES.centro) && !(SES.centros.includes("*") || SES.centros.length > 1)) { onDone(); applyInventory(nombreBase, data, SES.centro); return true; }
+    const opts = [...present].filter(allowed);
+    if (!opts.length) { $("invMsg").textContent = `«${nombreBase}» no tiene tablas de tus centros (${SES.centros.map(nameC).join(", ")}).`; $("invList").innerHTML = ""; return false; }
+    if (opts.length === 1 && !SES?.centros.includes("*")) { onDone(); applyInventory(nombreBase, data, opts[0]); return true; }
+    askCentro(nombreBase, data, onDone); return false;
+  }
+  function askCentro(nombreBase, data, onDone) {
+    const list = centroList(data.centros).filter(([c]) => allowed(c));
+    $("invMsg").textContent = `«${nombreBase}»: ¿qué centro vas a inventariar?`;
+    $("invList").innerHTML = list.map(([c, n]) => `<button class="btn" type="button" data-c="${c}" style="display:flex;justify-content:space-between;white-space:normal"><span><b>${c}</b> ${esc(CENTROS[c] || "")}${c === miCentro ? ' <span style="color:var(--muted);font-weight:400">(el tuyo)</span>' : ""}</span><span style="color:var(--muted);font-weight:400">${n} ${n === 1 ? "tabla" : "tablas"}</span></button>`).join("")
+      + (!SES || SES.centros.includes("*") ? `<button class="btn" type="button" data-c="" style="color:var(--muted)">Todos los centros</button>` : "");
+    pendingCentro = c => { onDone(); applyInventory(nombreBase, data, c); };
+  }
+  let pendingCentro = null;
+  const otroCentro = s => (DB.otros[DB.actual] || {})[norm(s)] || "";
   // ---------- inventarios subidos desde el PC (carpeta "inventarios" del repositorio) ----------
   function repoInfo() {
     if (window.REPO) return window.REPO;
@@ -499,6 +592,8 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     } catch { $("invMsg").textContent = "No se pudo ver la lista (¿sin conexión?). Inténtalo de nuevo con cobertura."; }
   });
   $("invList").addEventListener("click", async e => {
+    const bc = e.target.closest("button[data-c]");
+    if (bc && pendingCentro) { const f = pendingCentro; pendingCentro = null; f(bc.dataset.c); return; }
     const b = e.target.closest("button[data-f]"); if (!b) return;
     const file = b.dataset.f, nombre = file.replace(/\.(xlsx|xls|csv)$/i, "");
     if (!window.XLSX) { $("invMsg").textContent = "Hace falta internet para leer el Excel."; return; }
@@ -506,12 +601,10 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     try {
       const r = await withTimeout(fetch("inventarios/" + encodeURIComponent(file) + "?t=" + Date.now()), 20000);
       if (!r.ok) throw new Error(r.status);
-      const { series, dups } = await readSeries(r);
-      if (!series.length) { $("invMsg").textContent = "Ese Excel no tiene números de 11 cifras o más."; return; }
-      if (!DB.recuentos.includes(nombre)) DB.recuentos.push(nombre);
-      DB.actual = nombre; DB.esperadas[nombre] = series; save(); view = "miss"; render();
-      $("invDlg").close();
-      flashMsg(`Inventario «${nombre}»: ${series.length} tablas${dups ? ` (${dups} repetidas en el Excel, contadas una vez)` : ""}. Ya puedes escanear.`);
+      const data = await readSeries(r);
+      if (!data.series.length) { $("invMsg").textContent = "Ese Excel no tiene números de 11 cifras o más."; return; }
+      if (data.centros) { chooseCentro(nombre, data, () => $("invDlg").close()); return; }
+      $("invDlg").close(); applyInventory(nombre, data, "");
     } catch { $("invMsg").textContent = "No se pudo descargar. Si lo acabas de subir, espera 2 minutos y vuelve a probar."; }
   });
 
@@ -519,10 +612,11 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     const f = e.target.files[0]; e.target.value = ""; if (!f) return;
     if (!window.XLSX) { flashMsg("Hace falta internet para leer el Excel.", true); return; }
     try {
-      const { series, dups } = await readSeries(f);
-      if (!series.length) { flashMsg("No he encontrado números de 11 cifras o más en ese Excel.", true); return; }
-      DB.esperadas[DB.actual] = series; save(); view = "miss"; render();
-      flashMsg(`Inventario cargado en «${DB.actual}»: ${series.length} tablas${dups ? ` (${dups} repetidas en el Excel, contadas una vez)` : ""}.`);
+      const data = await readSeries(f);
+      if (!data.series.length) { flashMsg("No he encontrado números de 11 cifras o más en ese Excel.", true); return; }
+      const nombre = f.name.replace(/\.(xlsx|xls|csv)$/i, "");
+      if (data.centros) { $("invList").innerHTML = ""; $("invDlg").showModal(); chooseCentro(nombre, data, () => $("invDlg").close()); return; }
+      applyInventory(nombre, data, "");
     } catch { flashMsg("No se pudo leer ese Excel.", true); }
   });
   $("xlsxBtn").addEventListener("click", () => {
@@ -530,9 +624,9 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     if (!rows.length && !inv) { flashMsg("No hay tablas que exportar en este recuento."); return; }
     if (!window.XLSX) { flashMsg("Hace falta internet la primera vez para generar el Excel.", true); return; }
     const wb = XLSX.utils.book_new();
-    const aoa = [["Nº tabla", "Recuento", "Fecha y hora", "Cómo se leyó"].concat(inv ? ["¿En inventario?"] : [])];
-    rows.forEach(t => aoa.push([{ t: "s", v: t.serie }, t.recuento, new Date(t.ts).toLocaleString("es-ES"), t.metodo].concat(inv ? [es.has(norm(t.serie)) ? "Sí" : "No"] : [])));
-    const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [{wch:16},{wch:22},{wch:20},{wch:18},{wch:15}];
+    const aoa = [["Nº tabla", "Recuento", "Fecha y hora", "Cómo se leyó", "Usuario", "Centro del usuario"].concat(inv ? ["¿En inventario?", "Centro según listado"] : [])];
+    rows.forEach(t => aoa.push([{ t: "s", v: t.serie }, t.recuento, new Date(t.ts).toLocaleString("es-ES"), t.metodo, t.usuario || "", t.centro ? nameC(t.centro) : ""].concat(inv ? [es.has(norm(t.serie)) ? "Sí" : "No", es.has(norm(t.serie)) ? "" : (otroCentro(t.serie) ? nameC(otroCentro(t.serie)) : "")] : [])));
+    const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [{wch:16},{wch:30},{wch:20},{wch:16},{wch:16},{wch:26},{wch:15},{wch:26}];
     if (inv) {
       const readSet = new Set(rows.map(t => norm(t.serie)));
       const miss = exp.filter(s => !readSet.has(norm(s)));
@@ -558,6 +652,81 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       render(); flashMsg(`Importadas ${n} tablas en «${DB.actual}»${dup ? ` (${dup} ya estaban)` : ""}.`);
     } catch { flashMsg("No se pudo leer ese archivo. Usa un Excel con los números en la primera columna.", true); }
   });
+
+  // ---------- identificación ----------
+  // usuarios.xlsx (opcional, en la raíz del repositorio): columnas Usuario | PIN | Centros ("255", "255, 262" o "TODOS")
+  let SES = null, USERS = null;
+  try { SES = JSON.parse(localStorage.getItem("sesion") || "null"); } catch {}
+  try { USERS = JSON.parse(localStorage.getItem("usuarios-cache") || "null"); } catch {}
+  async function loadUsers() {
+    try {
+      if (!window.XLSX) return;
+      const r = await withTimeout(fetch("usuarios.xlsx?t=" + Date.now()), 10000);
+      if (r.status === 404) { USERS = null; try { localStorage.removeItem("usuarios-cache"); } catch {} return; }
+      if (!r.ok) return;
+      const wb = XLSX.read(await r.arrayBuffer(), { type: "array" });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: "" });
+      const h = rows.findIndex(r => r.some(c => /usuario|nombre/i.test(String(c))));
+      if (h < 0) return;
+      const H = rows[h].map(c => String(c).toLowerCase());
+      const iN = H.findIndex(c => /usuario|nombre/.test(c)), iP = H.findIndex(c => /pin|clave/.test(c)), iC = H.findIndex(c => /centro/.test(c));
+      USERS = rows.slice(h + 1).filter(r => String(r[iN]).trim()).map(r => {
+        const raw = String(iC >= 0 ? r[iC] : "").trim();
+        const centros = !raw || /todos|\*/i.test(raw) ? ["*"] : raw.split(/[^0-9]+/).filter(Boolean).map(c => c.replace(/^0+(?=\d{3})/, ""));
+        return { nombre: String(r[iN]).trim(), pin: iP >= 0 ? String(r[iP]).trim() : "", centros };
+      });
+      try { localStorage.setItem("usuarios-cache", JSON.stringify(USERS)); } catch {}
+    } catch {}
+  }
+  function fillCentros(list) {
+    const codes = list.includes("*") ? Object.keys(CENTROS).sort((a, b) => a - b) : list;
+    $("uCentro").innerHTML = codes.map(c => `<option value="${c}">${esc(nameC(c))}</option>`).join("");
+    if (SES && codes.includes(SES.centro)) $("uCentro").value = SES.centro;
+  }
+  function userSel() { return USERS ? USERS.find(u => u.nombre === $("uSel").value) : null; }
+  function showLogin() {
+    $("loginErr").textContent = ""; $("uPin").value = "";
+    if (USERS && USERS.length) {
+      $("lNameSel").hidden = false; $("lNameTxt").hidden = true;
+      $("uSel").innerHTML = `<option value="">— Elige tu nombre —</option>` + USERS.map(u => `<option>${esc(u.nombre)}</option>`).join("");
+      if (SES) $("uSel").value = SES.nombre;
+      const onUser = () => { const u = userSel(); $("lPin").hidden = !(u && u.pin); fillCentros(u ? u.centros : []); };
+      $("uSel").onchange = onUser; onUser();
+      $("loginNote").textContent = "Si no apareces en la lista, pide que te den de alta.";
+    } else {
+      $("lNameSel").hidden = true; $("lNameTxt").hidden = false; $("lPin").hidden = true;
+      $("uTxt").value = SES?.nombre || ""; fillCentros(["*"]);
+      $("loginNote").textContent = "";
+    }
+    $("login").hidden = false;
+  }
+  $("loginForm").addEventListener("submit", e => {
+    e.preventDefault();
+    let nombre, centros;
+    if (USERS && USERS.length) {
+      const u = userSel(); if (!u) { $("loginErr").textContent = "Elige tu nombre."; return; }
+      if (u.pin && $("uPin").value.trim() !== u.pin) { $("loginErr").textContent = "PIN incorrecto."; return; }
+      nombre = u.nombre; centros = u.centros;
+    } else {
+      nombre = $("uTxt").value.trim(); centros = ["*"];
+      if (!nombre) { $("loginErr").textContent = "Escribe tu nombre."; return; }
+    }
+    const centro = $("uCentro").value; if (!centro) { $("loginErr").textContent = "Elige tu centro."; return; }
+    SES = { nombre, centro, centros };
+    try { localStorage.setItem("sesion", JSON.stringify(SES)); } catch {}
+    miCentro = centro; $("login").hidden = true; showWho();
+  });
+  function showWho() {
+    $("who").innerHTML = SES ? `<b>${esc(SES.nombre)}</b> · ${esc(nameC(SES.centro))} · <button type="button" id="outBtn">Cambiar</button>` : "";
+    if (SES) $("outBtn").onclick = () => showLogin();
+  }
+  if (SES) { miCentro = SES.centro; $("login").hidden = true; showWho(); loadUsers().then(() => {
+      // si le han quitado el acceso o han cambiado sus centros, se actualiza la sesión
+      if (USERS && USERS.length) { const u = USERS.find(u => u.nombre === SES.nombre);
+        if (!u || !(u.centros.includes("*") || u.centros.includes(SES.centro))) { showLogin(); return; }
+        SES.centros = u.centros; try { localStorage.setItem("sesion", JSON.stringify(SES)); } catch {} }
+    }); }
+  else { showLogin(); loadUsers().then(() => { if (!SES) showLogin(); }); }
 
   render();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
