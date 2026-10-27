@@ -57,6 +57,16 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .who{font-size:.78rem;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
 .who b{color:var(--ink);font-weight:500}
 .who button{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;padding:2px}
+.splash{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
+  animation:splashOut .7s ease 1.7s forwards;cursor:pointer}
+.splash b{color:#fff;font-family:var(--f-display);font-weight:300;font-size:clamp(1.3rem,6.5vw,2.1rem);letter-spacing:.42em;text-transform:uppercase;text-align:center;
+  padding-left:.42em;opacity:0;animation:splashIn 1s ease .15s forwards}
+.splash img{height:22px;width:auto;opacity:0;animation:splashIn .8s ease .75s forwards}
+.splash i{width:0;height:1px;background:#f2d36b;animation:splashLine .9s ease .5s forwards}
+@keyframes splashIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes splashLine{to{width:min(220px,50vw)}}
+@keyframes splashOut{to{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion:reduce){.splash,.splash b,.splash img,.splash i{animation-duration:.01s}.splash{animation-delay:1.2s}}
 .login{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;display:flex;flex-direction:column;align-items:center;
   padding:calc(40px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) 30px max(20px,env(safe-area-inset-left,0px))}
 .login img{height:40px;width:auto;margin-bottom:28px}
@@ -116,6 +126,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
 </style>
 </head>
 <body>
+<div class="splash" id="splash" aria-hidden="true"><b>Gabriel Inventario</b><i></i><img src="logo-blanco.png" alt=""></div>
 <div class="login" id="login">
   <img src="logo.png" alt="Neolith" width="185" height="40">
   <form id="loginForm" autocomplete="off">
@@ -180,7 +191,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <button class="link" id="delRec" type="button">Borrar este recuento</button>
     <button class="link" id="resetAll" type="button" style="color:var(--bad)">Borrar todo y reiniciar la app</button>
   </p>
-  <p class="ver">versión 14</p>
+  <p class="ver">versión 15</p>
 </section>
 
 <dialog id="invDlg">
@@ -656,6 +667,11 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       render(); flashMsg(`Importadas ${n} tablas en «${DB.actual}»${dup ? ` (${dup} ya estaban)` : ""}.`);
     } catch { flashMsg("No se pudo leer ese archivo. Usa un Excel con los números en la primera columna.", true); }
   });
+
+  // ---------- pantalla de inicio ----------
+  { const sp = $("splash"); const end = () => sp.remove();
+    sp.addEventListener("click", end); sp.addEventListener("animationend", e => { if (e.animationName === "splashOut") end(); });
+    setTimeout(end, 4000); }
 
   // ---------- borrar ----------
   function twoTap(btn, label, ask, action) {
