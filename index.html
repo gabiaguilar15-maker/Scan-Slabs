@@ -176,7 +176,11 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <span class="btn">Importar leídas desde Excel<input type="file" id="importIn" accept=".xlsx,.xls,.csv" aria-label="Importar tablas leídas desde Excel"></span>
   </div>
   <p style="text-align:center;margin:0"><button class="link" id="dropInv" type="button" hidden>Quitar el inventario cargado de este recuento</button></p>
-  <p class="ver">versión 13</p>
+  <p style="text-align:center;margin:0;display:flex;flex-direction:column;gap:2px">
+    <button class="link" id="delRec" type="button">Borrar este recuento</button>
+    <button class="link" id="resetAll" type="button" style="color:var(--bad)">Borrar todo y reiniciar la app</button>
+  </p>
+  <p class="ver">versión 14</p>
 </section>
 
 <dialog id="invDlg">
@@ -651,6 +655,30 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       series.forEach(v => add(v, "Importado") ? n++ : dup++);
       render(); flashMsg(`Importadas ${n} tablas en «${DB.actual}»${dup ? ` (${dup} ya estaban)` : ""}.`);
     } catch { flashMsg("No se pudo leer ese archivo. Usa un Excel con los números en la primera columna.", true); }
+  });
+
+  // ---------- borrar ----------
+  function twoTap(btn, label, ask, action) {
+    let armed = false, t;
+    btn.addEventListener("click", () => {
+      if (!armed) { armed = true; btn.textContent = ask; btn.style.fontWeight = "600"; t = setTimeout(() => { armed = false; btn.textContent = label; btn.style.fontWeight = ""; }, 4000); return; }
+      clearTimeout(t); armed = false; btn.textContent = label; btn.style.fontWeight = ""; action();
+    });
+  }
+  twoTap($("delRec"), "Borrar este recuento", "¿Seguro? Pulsa otra vez para borrarlo", () => {
+    const r = DB.actual, n = current().length;
+    DB.tablas = DB.tablas.filter(t => t.recuento !== r);
+    delete DB.esperadas[r]; delete DB.otros[r];
+    DB.recuentos = DB.recuentos.filter(x => x !== r);
+    if (!DB.recuentos.length) { const d = new Date(); DB.recuentos = ["Recuento " + String(d.getDate()).padStart(2,"0") + "-" + String(d.getMonth()+1).padStart(2,"0")]; }
+    DB.actual = DB.recuentos[DB.recuentos.length - 1];
+    save(); view = "read"; render(); flashMsg(`Recuento «${r}» borrado (${n} ${n === 1 ? "tabla" : "tablas"}).`);
+  });
+  twoTap($("resetAll"), "Borrar todo y reiniciar la app", "¿Seguro? Se borra TODO lo de este móvil. Pulsa otra vez", async () => {
+    try { localStorage.clear(); } catch {}
+    try { for (const k of await caches.keys()) await caches.delete(k); } catch {}
+    try { for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); } catch {}
+    location.replace(location.pathname + "?r=" + Date.now());
   });
 
   // ---------- identificación ----------
