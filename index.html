@@ -165,6 +165,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
   </div>
   <div class="actions">
     <button class="btn primary" id="pickBtn" type="button">Elegir inventario</button>
+    <button class="btn" id="mailBtn" type="button">Enviar por email</button>
     <button class="btn" id="xlsxBtn" type="button">Exportar Excel</button>
   </div>
   <div class="actions">
@@ -191,7 +192,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <button class="link" id="delRec" type="button">Borrar este recuento</button>
     <button class="link" id="resetAll" type="button" style="color:var(--bad)">Borrar todo y reiniciar la app</button>
   </p>
-  <p class="ver">versión 17</p>
+  <p class="ver">versión 18</p>
 </section>
 
 <dialog id="invDlg">
@@ -705,10 +706,10 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       applyInventory(nombre, data, "");
     } catch { flashMsg("No se pudo leer ese Excel.", true); }
   });
-  $("xlsxBtn").addEventListener("click", () => {
+  function buildWorkbook() {
     const rows = current(), exp = expected(), es = expSet(), inv = exp.length > 0;
-    if (!rows.length && !inv) { flashMsg("No hay tablas que exportar en este recuento."); return; }
-    if (!window.XLSX) { flashMsg("Hace falta internet la primera vez para generar el Excel.", true); return; }
+    if (!rows.length && !inv) { flashMsg("No hay tablas que exportar en este recuento."); return null; }
+    if (!window.XLSX) { flashMsg("Hace falta internet la primera vez para generar el Excel.", true); return null; }
     const wb = XLSX.utils.book_new();
     const hasInfo = !!DB.info?.[DB.actual];
     const aoa = [["Nº tabla", "Recuento", "Fecha y hora", "Cómo se leyó", "Usuario", "Centro del usuario"].concat(inv ? ["¿En inventario?", "Según listado"] : [], hasInfo ? ["Material", "Denominación", "Lote"] : [])];
@@ -728,7 +729,27 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       const wm = XLSX.utils.aoa_to_sheet([["Nº tabla"].concat(hasInfo ? ["Material", "Denominación", "Lote"] : [])].concat(miss.map(s => [{ t: "s", v: s }].concat(hasInfo ? (i => [i?.m || "", i?.d || "", i?.l || ""])(infoOf(s)) : [])))); wm["!cols"] = [{wch:16},{wch:14},{wch:30},{wch:10}];
       XLSX.utils.book_append_sheet(wb, wm, "Faltan");
     } else XLSX.utils.book_append_sheet(wb, ws, "Tablas");
-    XLSX.writeFile(wb, "Tablas_" + DB.actual.replace(/[^\w\-]+/g, "_") + ".xlsx");
+    const readSet2 = new Set(rows.map(t => norm(t.serie)));
+    const resumen = inv
+      ? `${rows.filter(t => es.has(norm(t.serie))).length} de ${exp.length} tablas leídas (${Math.floor(rows.filter(t => es.has(norm(t.serie))).length * 100 / exp.length)} %). Faltan ${exp.filter(s => !readSet2.has(norm(s))).length}. Fuera de inventario: ${rows.filter(t => !es.has(norm(t.serie))).length}.`
+      : `${rows.length} tablas leídas.`;
+    return { wb, name: "Tablas_" + DB.actual.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\-]+/g, "_").replace(/_+/g, "_") + ".xlsx", resumen };
+  }
+  $("xlsxBtn").addEventListener("click", () => { const x = buildWorkbook(); if (x) XLSX.writeFile(x.wb, x.name); });
+  // enviar: abre el menú Compartir del móvil (Outlook, Teams, WhatsApp…) con el Excel adjunto
+  $("mailBtn").addEventListener("click", async () => {
+    const x = buildWorkbook(); if (!x) return;
+    const buf = XLSX.write(x.wb, { bookType: "xlsx", type: "array" });
+    const file = new File([buf], x.name, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const quien = SES ? `${SES.nombre} · ${nameC(SES.centro)}` : "";
+    const texto = `Recuento: ${DB.actual}\n${quien ? "Realizado por: " + quien + "\n" : ""}Fecha: ${new Date().toLocaleString("es-ES")}\n${x.resumen}\n\nSe adjunta el Excel con el detalle.`;
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: DB.actual, text: texto }); flashMsg("Listo. Revisa el correo y envíalo."); }
+      catch (e) { if (e?.name !== "AbortError") flashMsg("No se pudo abrir el menú de compartir. Usa Exportar Excel y adjúntalo a mano.", true); }
+    } else {
+      XLSX.writeFile(x.wb, x.name);
+      flashMsg("Este navegador no permite compartir archivos: se ha descargado el Excel para que lo adjuntes en Outlook.", true);
+    }
   });
   $("importIn").addEventListener("change", async e => {
     const f = e.target.files[0]; e.target.value = ""; if (!f || !window.XLSX) return;
