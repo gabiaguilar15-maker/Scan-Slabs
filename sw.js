@@ -1,5 +1,5 @@
 // Guarda la app y sus librerías para que funcione sin cobertura en el almacén.
-const CACHE = "gabriel-inventario-v19";
+const CACHE = "gabriel-inventario-v20";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./logo.png", "./logo-blanco.png", "./config.js",
   "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js",
@@ -15,8 +15,11 @@ self.addEventListener("activate", e => {
 });
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
+  // lo propio de la app se pide siempre fresco (sin la caché de 10 min del navegador)
+  const propio = new URL(e.request.url).origin === self.location.origin;
+  const req = propio ? new Request(e.request.url, { cache: "no-cache" }) : e.request;
   e.respondWith(
-    fetch(e.request).then(r => {
+    fetch(req).then(r => {
       const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
       return r;
     }).catch(() => caches.match(e.request))
