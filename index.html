@@ -44,6 +44,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .result small{font-size:1rem;font-weight:500}
 .result.ok{background:rgba(47,168,101,.93)} .result.dup{background:rgba(232,176,33,.95);color:#14181c} .result.bad{background:rgba(217,74,58,.93)}
 .result.busy{background:rgba(0,0,0,.45)}
+.result.ask{background:rgba(232,176,33,.97);color:#14181c;pointer-events:auto}
+.result .askb{display:flex;gap:12px;margin-top:10px}
+.result .askb button{font:inherit;font-weight:600;font-size:1.05rem;padding:14px 22px;border-radius:2px;border:2px solid #14181c;cursor:pointer;background:#14181c;color:#fff}
+.result .askb button.sec{background:transparent;color:#14181c}
 .over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;background:#0d1013}
 .over p{margin:0;color:var(--muted);max-width:32ch}
 .big-btn{background:#fff;color:#111;border:0;border-radius:2px;padding:16px 28px;font-family:var(--f-display);font-weight:500;font-size:1.05rem;text-transform:uppercase;letter-spacing:.24em;cursor:pointer}
@@ -192,7 +196,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <button class="link" id="delRec" type="button">Borrar este recuento</button>
     <button class="link" id="resetAll" type="button" style="color:var(--bad)">Borrar todo y reiniciar la app</button>
   </p>
-  <p class="ver">versión 18</p>
+  <p class="ver">versión 19</p>
 </section>
 
 <dialog id="invDlg">
@@ -376,9 +380,18 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     } catch {}
     // sin código de barras: leer el número impreso en el dorso con el lector en la nube
     if (!codes.length && lastFrame && window.OCR_URL) {
-      showResult("busy", "Leyendo el dorso…", "", "");
-      try { const s = await readBack(lastFrame); if (s) { codes = [s]; metodo = "Leída del dorso"; } }
-      catch (e) { ocrErr = e.message || ""; }
+      showResult("busy", "Leyendo el número…", "", "");
+      try {
+        const s = await readBack(lastFrame);
+        if (s) {
+          // red de seguridad: un número leído como texto que no está en ningún listado se confirma antes de guardar
+          const known = expSet().has(norm(s)) || !!otroInfo(s).c || !!otroInfo(s).m;
+          if (known || await confirmRead(s)) { codes = [s]; metodo = "Leída por texto"; }
+          else ocrErr = "Descartado. Repite la foto o escribe el número a mano";
+        }
+      } catch (e) { ocrErr = e.message || ""; }
+    } else if (!codes.length && !window.OCR_URL) {
+      ocrErr = "Sin código de barras legible. Acércate y repite, o escribe el número a mano (el lector de texto aún no está activado)";
     }
     if (!codes.length) {
       showResult("bad", "No se lee", "", ocrErr || "Acércate, encaja el código o el número en el recuadro y repite");
@@ -400,16 +413,25 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     return c.toDataURL("image/jpeg", .85).split(",")[1];
   }
   async function readBack(b64) {
-    if (!navigator.onLine) throw new Error("Sin conexión: no se puede leer el dorso");
+    if (!navigator.onLine) throw new Error("Sin conexión: no se puede leer el número escrito");
     let r;
     try {
       r = await withTimeout(fetch(window.OCR_URL, { method: "POST", headers: { "Content-Type": "application/json", "X-App-Key": window.OCR_KEY || "" }, body: JSON.stringify({ image: b64 }) }), 20000);
-    } catch { throw new Error("Sin conexión con el lector del dorso"); }
-    if (r.status === 401 || r.status === 403) throw new Error("Lector del dorso no autorizado: revisa la configuración");
-    if (!r.ok) throw new Error("El lector del dorso ha fallado (" + r.status + ")");
+    } catch { throw new Error("Sin conexión con el lector de texto"); }
+    if (r.status === 401 || r.status === 403) throw new Error("Lector de texto no autorizado: revisa la configuración");
+    if (!r.ok) { let d = ""; try { d = (await r.json()).error || ""; } catch {} throw new Error("El lector de texto ha fallado (" + r.status + (d ? ": " + d : "") + ")"); }
     const j = await r.json();
     const v = String(j.serie || "").replace(/\D/g, "");
     return VALID.test(v) ? v : null;
+  }
+  function confirmRead(s) {
+    return new Promise(done => {
+      const r = $("result"); clearTimeout(resultT); r.hidden = false; r.className = "result ask";
+      r.innerHTML = `<b>¿Es correcto?</b><span>${esc(s)}</span><small>Leído del texto. No está en el listado cargado: compáralo con la etiqueta</small>
+        <div class="askb"><button type="button" data-ok="1">Guardar</button><button type="button" class="sec" data-ok="0">Repetir</button></div>`;
+      feedback(false);
+      r.onclick = e => { const b = e.target.closest("button[data-ok]"); if (!b) return; r.onclick = null; r.hidden = true; done(b.dataset.ok === "1"); };
+    });
   }
   function showResult(kind, title, num, sub) {
     const r = $("result"); r.hidden = false; r.className = "result " + kind;
@@ -468,7 +490,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       : list.map(t => {
           const h = new Date(t.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
           if (t.serie === confirmSerie) return `<li class="confirm" data-s="${esc(t.serie)}"><span class="n">${esc(t.serie)}</span><button class="x" data-a="yes" type="button" style="color:var(--bad);font-weight:600">Quitar</button><button class="x" data-a="no" type="button">Cancelar</button></li>`;
-          const how = t.metodo === "Escrito a mano" ? "a mano" : t.metodo === "Importado" ? "importada" : t.metodo === "Leída del dorso" ? "dorso" : "foto";
+          const how = t.metodo === "Escrito a mano" ? "a mano" : t.metodo === "Importado" ? "importada" : (t.metodo === "Leída del dorso" || t.metodo === "Leída por texto") ? "texto" : "foto";
           const tag = inv && !es.has(norm(t.serie)) ? `<span class="tag">${esc(otroTag(t.serie))}</span>` : "";
           return `<li data-s="${esc(t.serie)}" class="${t.serie === newSerie ? "new" : ""}"><span class="n">${esc(t.serie)}</span>${tag}<span class="meta">${h}<br>${how}</span><button class="x" data-a="ask" type="button" aria-label="Quitar ${esc(t.serie)}">✕</button></li>`;
         }).join("");
