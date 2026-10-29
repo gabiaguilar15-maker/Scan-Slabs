@@ -196,7 +196,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <button class="link" id="delRec" type="button">Borrar este recuento</button>
     <button class="link" id="resetAll" type="button" style="color:var(--bad)">Borrar todo y reiniciar la app</button>
   </p>
-  <p class="ver">versión 19</p>
+  <p class="ver">versión 21</p>
 </section>
 
 <dialog id="invDlg">
@@ -529,7 +529,11 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
   // ---------- Excel ----------
   // Lee todas las celdas de la primera hoja y se queda con la columna que más nº de tabla tiene.
   // código de centro de una celda: 3-4 cifras, se quita el 0 delante (0255 = 255)
-  const cellC = c => { const t = (typeof c === "number" ? c.toFixed(0) : String(c ?? "").trim()); return /^\d{3,4}$/.test(t) ? t.replace(/^0+(?=\d{3})/, "") : ""; };
+  // distribuidores sin código de centro: se reconocen por su nombre (sin importar mayúsculas ni acentos)
+  const DIST = {"MERIDASTONE":"Meridastone","MARMOLESAZOR":"Mármoles Azor","ALASTUR":"Alastur","CANARYCELLS":"Canarycells","TEIDEMAR":"Teidemar"};
+  const distOf = t => { const u = String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]+/g, ""); if (!u || u.length > 60) return ""; return Object.keys(DIST).find(k => u.includes(k)) || ""; };
+  const cmpC = (a, b) => (isNaN(a) - isNaN(b)) || (isNaN(a) ? String(DIST[a] || a).localeCompare(DIST[b] || b) : a - b);
+  const cellC = c => { const t = (typeof c === "number" ? c.toFixed(0) : String(c ?? "").trim()); return /^\d{3,4}$/.test(t) ? t.replace(/^0+(?=\d{3})/, "") : typeof c === "number" ? "" : distOf(t); };
   async function readSeries(file) {
     const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: "" });
@@ -581,12 +585,13 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
   }
   // ---------- centros ----------
   const CENTROS = {"113":"NUEVA JERSEY - USA","114":"FLORIDA - USA","115":"LOS ANGELES - USA","120":"WROCLAW - POLAND","121":"KATOWICE","131":"HARLOW - UK","132":"LEEDS - UK","150":"KEMPTON PARK","151":"CAPE TOWN - SOUTHAF","160":"VERONA - ITALY","161":"TOLENTINO - ITALY","162":"PORDENONE - ITALY","163":"TIVOLI - ITALY","164":"MILAN - ITALY","165":"ANDRIA - ITALY","166":"ROMA - ITALY","167":"OSTRA VETERE - ITALY","170":"GOTHENBURG - SWEDEN","202":"CENTRAL","250":"INTEGRAL STONE","251":"MALAGA","252":"STONE SUR","253":"NEOLITH VALLADOLID","254":"NEOLITH ARAGON","255":"NEOLITH VITORIA","256":"NEOLITH CIUDAD REAL","257":"NEO SUPERFICIES","258":"NEOLITH BALEARES","259":"NEOLITH PONTS","260":"NEOLITH BARCELONA","261":"NEOLITH GALICIA","262":"NEOLITH MADRID","2001":"NEOLITH SYDNEY","2002":"MELBOURNE PLANT","2003":"ADELAIDE PLANT","2010":"AUCKLAND - NEW ZEALAND","2011":"CHRISTCHURCH - NEW ZEALAND","2015":"NEOLITH SINGAPORE"};
-  const nameC = c => CENTROS[c] ? `${c} · ${CENTROS[c]}` : `Centro ${c}`;
+  Object.assign(CENTROS, DIST);
+  const nameC = c => DIST[c] ? DIST[c] : CENTROS[c] ? `${c} · ${CENTROS[c]}` : `Centro ${c}`;
   let miCentro = ""; try { miCentro = localStorage.getItem("mi-centro") || ""; } catch {}
   DB.otros = DB.otros || {};                     // recuento -> { serie normalizada: centro } de los demás centros
   function centroList(centros) {
     const n = {}; Object.values(centros).forEach(c => n[c] = (n[c] || 0) + 1);
-    return Object.entries(n).sort((a, b) => (b[0] === miCentro) - (a[0] === miCentro) || (+a[0]) - (+b[0]));
+    return Object.entries(n).sort((a, b) => (b[0] === miCentro) - (a[0] === miCentro) || cmpC(a[0], b[0]));
   }
   function applyInventory(nombreBase, data, centro, mat) {
     // si hay materiales distintos en lo elegido y aún no se ha elegido, pregunta (recuento cíclico)
@@ -630,7 +635,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
   function askCentro(nombreBase, data, onDone) {
     const list = centroList(data.centros).filter(([c]) => allowed(c));
     $("invMsg").textContent = `«${nombreBase}»: ¿qué centro vas a inventariar?`;
-    $("invList").innerHTML = list.map(([c, n]) => `<button class="btn" type="button" data-c="${c}" style="display:flex;justify-content:space-between;white-space:normal"><span><b>${c}</b> ${esc(CENTROS[c] || "")}${c === miCentro ? ' <span style="color:var(--muted);font-weight:400">(el tuyo)</span>' : ""}</span><span style="color:var(--muted);font-weight:400">${n} ${n === 1 ? "tabla" : "tablas"}</span></button>`).join("")
+    $("invList").innerHTML = list.map(([c, n]) => `<button class="btn" type="button" data-c="${c}" style="display:flex;justify-content:space-between;white-space:normal"><span>${DIST[c] ? `<b>${esc(DIST[c])}</b>` : `<b>${c}</b> ${esc(CENTROS[c] || "")}`}${c === miCentro ? ' <span style="color:var(--muted);font-weight:400">(el tuyo)</span>' : ""}</span><span style="color:var(--muted);font-weight:400">${n} ${n === 1 ? "tabla" : "tablas"}</span></button>`).join("")
       + (!SES || SES.centros.includes("*") ? `<button class="btn" type="button" data-c="" style="color:var(--muted)">Todos los centros</button>` : "");
     pendingCentro = c => applyInventory(nombreBase, data, c);
   }
@@ -680,7 +685,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       // un Excel cuyo nombre empieza por un código de centro ("255 - …") es solo de ese centro;
       // los demás se abren y solo se muestran si tienen tablas de los centros del usuario
       const info = await Promise.all(files.map(async f => {
-        const pre = (f.name.match(/^0*(\d{3,4})\b/) || [])[1];
+        const pre = (f.name.match(/^0*(\d{3,4})\b/) || [])[1] || distOf(f.name.split(/\s+-\s+|_|\./)[0]);
         if (pre) return { f, ok: allowed(pre), txt: nameC(pre) };
         try {
           const d = await loadInv(f);
@@ -831,14 +836,14 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       const iN = H.findIndex(c => /usuario|nombre/.test(c)), iP = H.findIndex(c => /pin|clave/.test(c)), iC = H.findIndex(c => /centro/.test(c));
       USERS = rows.slice(h + 1).filter(r => String(r[iN]).trim()).map(r => {
         const raw = String(iC >= 0 ? r[iC] : "").trim();
-        const centros = !raw || /todos|\*/i.test(raw) ? ["*"] : raw.split(/[^0-9]+/).filter(Boolean).map(c => c.replace(/^0+(?=\d{3})/, ""));
+        const centros = !raw || /todos|\*/i.test(raw) ? ["*"] : raw.split(/[,;\/|\n]+/).flatMap(t => distOf(t) ? [distOf(t)] : (t.match(/\d+/g) || []).map(c => c.replace(/^0+(?=\d{3})/, "")));
         return { nombre: String(r[iN]).trim(), pin: iP >= 0 ? String(r[iP]).trim() : "", centros };
       });
       try { localStorage.setItem("usuarios-cache", JSON.stringify(USERS)); } catch {}
     } catch {}
   }
   function fillCentros(list) {
-    const codes = list.includes("*") ? Object.keys(CENTROS).sort((a, b) => a - b) : list;
+    const codes = list.includes("*") ? Object.keys(CENTROS).sort(cmpC) : list;
     $("uCentro").innerHTML = codes.map(c => `<option value="${c}">${esc(nameC(c))}</option>`).join("");
     if (SES && codes.includes(SES.centro)) $("uCentro").value = SES.centro;
   }
