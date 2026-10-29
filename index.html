@@ -196,7 +196,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <button class="link" id="delRec" type="button">Borrar este recuento</button>
     <button class="link" id="resetAll" type="button" style="color:var(--bad)">Borrar todo y reiniciar la app</button>
   </p>
-  <p class="ver">versión 21</p>
+  <p class="ver">versión 23</p>
 </section>
 
 <dialog id="invDlg">
@@ -204,6 +204,14 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <h3>Elegir inventario</h3>
     <p class="msg" id="invMsg" style="margin:0 0 8px">Buscando inventarios…</p>
     <div id="invList" style="display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto"></div>
+    <div class="row" style="margin-top:10px"><button class="btn" value="cancel">Cerrar</button></div>
+  </form>
+</dialog>
+<dialog id="mailDlg">
+  <form method="dialog">
+    <h3>Enviar por email</h3>
+    <p class="msg" style="margin:0 0 8px">El Excel <b id="mailFile"></b> se ha guardado en <b>Descargas</b>.<br>Pulsa «Abrir correo» y adjúntalo con el clip (📎 → Descargas).</p>
+    <a class="btn" id="mailLink" href="#" style="display:block;text-align:center;text-decoration:none">Abrir correo</a>
     <div class="row" style="margin-top:10px"><button class="btn" value="cancel">Cerrar</button></div>
   </form>
 </dialog>
@@ -762,6 +770,9 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       : `${rows.length} tablas leídas.`;
     return { wb, name: "Tablas_" + DB.actual.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\-]+/g, "_").replace(/_+/g, "_") + ".xlsx", resumen };
   }
+  // destinatarios del correo: siempre MAIL_TODOS y, además, los del centro del usuario
+  const MAIL_TODOS = ["g.aguilar@neolith.com", "f.abellan@neolith.com", "s.escribano@neolith.com"];
+  const MAIL_CENTRO = {};   // p. ej. {"202": ["x@neolith.com"], "TEIDEMAR": ["y@teidemar.com"]}
   $("xlsxBtn").addEventListener("click", () => { const x = buildWorkbook(); if (x) XLSX.writeFile(x.wb, x.name); });
   // enviar: abre el menú Compartir del móvil (Outlook, Teams, WhatsApp…) con el Excel adjunto
   $("mailBtn").addEventListener("click", async () => {
@@ -770,13 +781,18 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     const file = new File([buf], x.name, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const quien = SES ? `${SES.nombre} · ${nameC(SES.centro)}` : "";
     const texto = `Recuento: ${DB.actual}\n${quien ? "Realizado por: " + quien + "\n" : ""}Fecha: ${new Date().toLocaleString("es-ES")}\n${x.resumen}\n\nSe adjunta el Excel con el detalle.`;
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: DB.actual, text: texto }); flashMsg("Listo. Revisa el correo y envíalo."); }
-      catch (e) { if (e?.name !== "AbortError") flashMsg("No se pudo abrir el menú de compartir. Usa Exportar Excel y adjúntalo a mano.", true); }
-    } else {
-      XLSX.writeFile(x.wb, x.name);
-      flashMsg("Este navegador no permite compartir archivos: se ha descargado el Excel para que lo adjuntes en Outlook.", true);
+    // Chrome en Android no deja compartir Excel desde una web: entonces se descarga y se abre el correo con el texto puesto
+    let sinShare = false; try { sinShare = localStorage.getItem("sin-share-xlsx") === "1"; } catch {}
+    if (!sinShare && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: DB.actual, text: texto }); flashMsg("Listo. Revisa el correo y envíalo."); return; }
+      catch (e) { if (e?.name === "AbortError") return; try { localStorage.setItem("sin-share-xlsx", "1"); } catch {} }
     }
+    XLSX.writeFile(x.wb, x.name);
+    $("mailFile").textContent = x.name;
+    const para = [...new Set(MAIL_TODOS.concat(SES ? MAIL_CENTRO[SES.centro] || [] : []))].join(",");
+    $("mailLink").href = "mailto:" + para + "?subject=" + encodeURIComponent("Recuento " + DB.actual) + "&body=" + encodeURIComponent(texto);
+    $("mailLink").onclick = () => setTimeout(() => $("mailDlg").close(), 500);
+    $("mailDlg").showModal();
   });
   $("importIn").addEventListener("change", async e => {
     const f = e.target.files[0]; e.target.value = ""; if (!f || !window.XLSX) return;
