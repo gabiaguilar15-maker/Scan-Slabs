@@ -127,6 +127,46 @@ dialog .row{display:flex;gap:8px;justify-content:flex-end}
 li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a77a00;background:#fdf3d6;border-radius:2px;padding:2px 6px}
 .link{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.8rem;padding:6px}
 @media (prefers-reduced-motion:reduce){li.new{animation:none}}
+/* ---- portal: menú y consultas ---- */
+.home,.cons{max-width:560px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.home .kick{margin:0;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.home h1{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.9rem}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:16px 14px;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;gap:16px;text-align:left;cursor:pointer;color:var(--ink)}
+.tile.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.tile b{font-family:var(--f-display);font-weight:500;font-size:1.15rem;display:block}
+.tile span{font-size:.82rem;color:var(--muted)} .tile.dark span{color:#c9c7c2}
+.tile svg{width:28px;height:28px}
+.box{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.box .row2{display:flex;justify-content:space-between;gap:10px;font-size:.92rem}
+.chead{display:flex;align-items:center;gap:10px}
+.back{width:44px;height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:center;background:var(--panel);border:1.5px solid var(--line);border-radius:8px;cursor:pointer}
+.chead h1{margin:0;font-family:var(--f-display);font-weight:500;font-size:1.35rem}
+.chead small{display:block;color:var(--muted);font-size:.8rem}
+.csel{width:100%;background:var(--panel);border:1.5px solid var(--line);border-radius:8px;padding:10px;font-size:16px;color:var(--ink)}
+.search{display:flex;align-items:center;gap:8px;background:var(--panel);border:1.5px solid var(--line);border-radius:8px;padding:0 12px;height:46px}
+.search input{border:0;outline:0;flex:1;min-width:0;font-size:16px;background:transparent}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:var(--panel);border:1.5px solid var(--line);border-radius:99px;padding:7px 12px;font-size:.85rem;cursor:pointer;color:var(--ink);min-height:36px}
+.chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.chips.sq .chip{border-radius:8px;min-width:46px}
+.lbl{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.card .ch{padding:12px 14px;display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #ecebe8}
+.card .ch .so{font-family:var(--f-mono);font-weight:500}
+.card .sub{font-size:.8rem;color:var(--muted)}
+.card .ln{padding:10px 14px;display:flex;justify-content:space-between;gap:10px;border-top:1px solid #f3f2ef}
+.card .ln:first-of-type{border-top:0}
+.card .ln > div{min-width:0}
+.pill{align-self:center;flex-shrink:0;font-size:.72rem;font-weight:500;padding:4px 9px;border-radius:99px;white-space:nowrap}
+.p-ent{background:#e6eef8;color:#1d4f8c} .p-stk{background:#e3f2e9;color:#1f6b3f} .p-prd{background:#fbefd6;color:#7a4f00} .p-pln{background:#ecebe8;color:#55534f}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:0 14px 12px}
+.steps div{display:flex;flex-direction:column;gap:4px;font-size:.72rem;color:var(--muted)}
+.steps i{height:4px;border-radius:2px;background:var(--line)} .steps i.on{background:#1f6b3f}
+.steps b{font-size:.9rem;font-weight:500;color:var(--ink)}
+.sumline{display:flex;justify-content:space-between;align-items:baseline;color:var(--muted);font-size:.9rem}
+.sumline b{font-family:var(--f-display);font-weight:500;font-size:1.4rem;color:var(--ink)}
+.menuBtn{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;padding:2px}
 </style>
 </head>
 <body>
@@ -145,6 +185,23 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
   </form>
 </div>
 <header class="brand"><img src="logo.png" alt="Neolith" width="123" height="26"><div class="who" id="who"></div></header>
+<section class="home" id="home" hidden>
+  <div><p class="kick">Portal logístico</p><h1 id="hello">Hola</h1></div>
+  <div class="tiles">
+    <button class="tile dark" type="button" data-go="inv"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 8v8M10 8v8M13 8v8M16 8v8"/></svg><div><b>Inventario</b><span>Escanear tablas</span></div></button>
+    <button class="tile" type="button" data-go="ped"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><div><b>Pedidos</b><span id="hPed">Pedidos abiertos</span></div></button>
+    <button class="tile" type="button" data-go="stk"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 18h16M5 18V9M9 18V6M13 18V9M17 18V6"/></svg><div><b>Stock fábrica</b><span>Consultar disponible</span></div></button>
+    <button class="tile" type="button" data-go="trn"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 6h12v10H2zM14 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg><div><b>Transportes</b><span>Cargas y horarios</span></div></button>
+  </div>
+  <div class="box" id="hBox"></div>
+  <div class="box">
+    <span class="lbl">Datos de consulta (prueba)</span>
+    <span class="sub" id="hData" style="font-size:.85rem;color:var(--muted)">Sin datos cargados.</span>
+    <span class="btn">Cargar Excel de pedidos y cargas<input type="file" id="consIn" accept=".xlsx,.xlsm,.xls" multiple aria-label="Cargar Status Orders y Web Cargas"></span>
+    <span style="font-size:.75rem;color:var(--muted)">Elige Status Orders y Web Cargas. Se quedan solo en este móvil.</span>
+  </div>
+</section>
+<section class="cons" id="cons" hidden></section>
 <section class="cam" id="cam">
   <video id="video" playsinline muted autoplay></video>
   <div class="guide"><span>Encaja el código de barras aquí</span></div>
@@ -158,7 +215,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
   </div>
 </section>
 
-<section class="panel">
+<section class="panel" id="panel">
   <div class="top">
     <select id="recSel" aria-label="Recuento"></select>
     <div class="count"><b id="count">0</b><span>tablas</span></div>
@@ -196,7 +253,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     <button class="link" id="delRec" type="button">Borrar este recuento</button>
     <button class="link" id="resetAll" type="button" style="color:var(--bad)">Borrar todo y reiniciar la app</button>
   </p>
-  <p class="ver">versión 23</p>
+  <p class="ver">versión 25</p>
 </section>
 
 <dialog id="invDlg">
@@ -747,9 +804,14 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     if (!window.XLSX) { flashMsg("Hace falta internet la primera vez para generar el Excel.", true); return null; }
     const wb = XLSX.utils.book_new();
     const hasInfo = !!DB.info?.[DB.actual];
-    const aoa = [["Nº tabla", "Recuento", "Fecha y hora", "Cómo se leyó", "Usuario", "Centro del usuario"].concat(inv ? ["¿En inventario?", "Según listado"] : [], hasInfo ? ["Material", "Denominación", "Lote"] : [])];
-    rows.forEach(t => aoa.push([{ t: "s", v: t.serie }, t.recuento, new Date(t.ts).toLocaleString("es-ES"), t.metodo, t.usuario || "", t.centro ? nameC(t.centro) : ""].concat(inv ? [es.has(norm(t.serie)) ? "Sí" : "No", es.has(norm(t.serie)) ? "" : otroTexto(t.serie)] : [], hasInfo ? (i => [i?.m || "", i?.d || "", i?.l || ""])(infoOf(t.serie)) : [])));
-    const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [{wch:16},{wch:30},{wch:20},{wch:16},{wch:16},{wch:26},{wch:15},{wch:26}];
+    // pestañas: Leídas (del inventario), Faltan y Fuera de inventario; sin inventario cargado, una sola pestaña Tablas
+    const cab = ["Nº tabla", "Recuento", "Fecha y hora", "Cómo se leyó", "Usuario", "Centro del usuario"];
+    const fila = t => [{ t: "s", v: t.serie }, t.recuento, new Date(t.ts).toLocaleString("es-ES"), t.metodo, t.usuario || "", t.centro ? nameC(t.centro) : ""];
+    const extra = s => hasInfo ? (i => [i?.m || "", i?.d || "", i?.l || ""])(infoOf(s)) : [];
+    const cabInfo = hasInfo ? ["Material", "Denominación", "Lote"] : [];
+    const anchos = [{wch:16},{wch:30},{wch:20},{wch:16},{wch:16},{wch:26},{wch:14},{wch:30},{wch:10}];
+    const dentro = inv ? rows.filter(t => es.has(norm(t.serie))) : rows, fuera = inv ? rows.filter(t => !es.has(norm(t.serie))) : [];
+    const ws = XLSX.utils.aoa_to_sheet([cab.concat(cabInfo)].concat(dentro.map(t => fila(t).concat(extra(t.serie))))); ws["!cols"] = anchos;
     if (inv) {
       const readSet = new Set(rows.map(t => norm(t.serie)));
       const miss = exp.filter(s => !readSet.has(norm(s)));
@@ -763,6 +825,9 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
       XLSX.utils.book_append_sheet(wb, ws, "Leídas");
       const wm = XLSX.utils.aoa_to_sheet([["Nº tabla"].concat(hasInfo ? ["Material", "Denominación", "Lote"] : [])].concat(miss.map(s => [{ t: "s", v: s }].concat(hasInfo ? (i => [i?.m || "", i?.d || "", i?.l || ""])(infoOf(s)) : [])))); wm["!cols"] = [{wch:16},{wch:14},{wch:30},{wch:10}];
       XLSX.utils.book_append_sheet(wb, wm, "Faltan");
+      const wf = XLSX.utils.aoa_to_sheet([cab.concat(["Según el listado"])].concat(fuera.map(t => fila(t).concat([otroTexto(t.serie) || "No está en el listado"]))));
+      wf["!cols"] = anchos.slice(0, 6).concat([{wch:34}]);
+      XLSX.utils.book_append_sheet(wb, wf, "Fuera de inventario");
     } else XLSX.utils.book_append_sheet(wb, ws, "Tablas");
     const readSet2 = new Set(rows.map(t => norm(t.serie)));
     const resumen = inv
@@ -894,12 +959,212 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
     const centro = $("uCentro").value; if (!centro) { $("loginErr").textContent = "Elige tu centro."; return; }
     SES = { nombre, centro, centros };
     try { localStorage.setItem("sesion", JSON.stringify(SES)); } catch {}
-    miCentro = centro; $("login").hidden = true; showWho();
+    miCentro = centro; consC = null; $("login").hidden = true; goView("home");
   });
   function showWho() {
-    $("who").innerHTML = SES ? `<b>${esc(SES.nombre)}</b> · ${esc(nameC(SES.centro))} · <button type="button" id="outBtn">Cambiar</button>` : "";
+    $("who").innerHTML = SES ? `<b>${esc(SES.nombre)}</b> · ${esc(nameC(SES.centro))} · <button type="button" id="outBtn">Cambiar</button>${pv !== "home" ? ` · <button type="button" id="menuBtn">Menú</button>` : ""}` : "";
     if (SES) $("outBtn").onclick = () => showLogin();
+    if ($("menuBtn")) $("menuBtn").onclick = () => goView("home");
   }
+  // ======================= PORTAL: menú y consultas =======================
+  const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const MES_C = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const up = t => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const keyT = t => up(t).replace(/\bNEOLITH\b/g, " ").replace(/[^A-Z0-9]+/g, " ").trim();
+  // nombre en los Excel -> código de centro (delegaciones y filiales)
+  const ALIAS = {"113":["NEW JERSEY","NUEVA JERSEY"],"114":["MIAMI","FLORIDA"],"115":["LOS ANGELES"],"120":["WROCLAW"],"121":["KATOWICE"],"131":["HARLOW"],"132":["LEEDS"],
+    "150":["JOHANNESBURG","KEMPTON PARK","SUDAFRICA"],"151":["CAPE TOWN"],"160":["VERONA"],"161":["TOLENTINO"],"162":["PORDENONE"],"163":["TIVOLI"],"164":["MILAN"],"165":["ANDRIA"],"166":["ROMA"],"167":["OSTRA VETERE"],
+    "170":["GOTHENBURG","SUECIA","MALMO"],"202":["CENTRAL"],"250":["INTEGRAL STONE"],"251":["MALAGA"],"252":["STONE SUR","SEVILLA"],"253":["VALLADOLID"],"254":["ARAGON","ZARAGOZA"],"255":["VITORIA"],
+    "256":["CIUDAD REAL"],"257":["NEO SUPERFICIES"],"258":["BALEARES"],"259":["PONTS"],"260":["BARCELONA"],"261":["GALICIA"],"262":["MADRID"],
+    "2001":["SYDNEY","SIDNEY"],"2002":["MELBOURNE"],"2003":["ADELAIDE"],"2010":["AUCKLAND"],"2011":["CHRISTCHURCH"],"2015":["SINGAPORE","SINGAPUR"]};
+  const cliMemo = new Map();
+  function centroDe(nombre) {
+    if (cliMemo.has(nombre)) return cliMemo.get(nombre);
+    let c = up(nombre).replace(/[^A-Z0-9]+/g, "").includes("JOSEGREGORIOMESA") ? "TEIDEMAR" : distOf(nombre);
+    if (!c) { const k = keyT(nombre); c = Object.keys(ALIAS).find(code => ALIAS[code].some(a => k === a || k.startsWith(a + " "))) || ""; }
+    cliMemo.set(nombre, c); return c;
+  }
+  // fechas de Excel (número de serie) sin líos de zona horaria
+  const serialDate = n => new Date(Date.UTC(1899, 11, 30) + Math.floor(n) * 864e5);
+  const fDia = n => { const d = serialDate(n); return d.getUTCDate() + " " + MES_C[d.getUTCMonth()]; };
+  const fDiaL = n => { const d = serialDate(n); const t = DIAS[d.getUTCDay()]; return t[0].toUpperCase() + t.slice(1) + " " + d.getUTCDate() + " " + MES_C[d.getUTCMonth()]; };
+  const fHora = v => { if (typeof v === "number") { const m = Math.round((v - Math.floor(v)) * 1440) % 1440; return Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0"); } const s = String(v ?? "").trim(); return /^\d{1,2}:\d{2}/.test(s) ? s.slice(0, 5) : ""; };
+  const hoySerial = () => { const n = new Date(); return Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(1899, 11, 30)) / 864e5); };
+  const tb2 = n => n + (n === 1 ? " tabla" : " tablas");
+
+  let CONS = null; try { CONS = JSON.parse(localStorage.getItem("consultas-v1") || "null"); } catch {}
+  const hdrIdx = (rows, need) => rows.slice(0, 15).findIndex(r => need.every(n => r.some(c => up(c).trim() === n)));
+  async function leerConsultas(files) {
+    if (!window.XLSX) throw new Error("Hace falta internet la primera vez para leer Excel.");
+    const out = Object.assign({ orders: null, stock: null, cargas: null }, CONS || {});
+    for (const f of files) {
+      const buf = await f.arrayBuffer();
+      const names = XLSX.read(buf, { type: "array", bookSheets: true }).SheetNames;
+      const want = [];
+      if (names.includes("Orders")) want.push("Orders");
+      if (names.includes("Stock")) want.push("Stock");
+      const mes = names.find(n => up(n).trim() === up(MESES[new Date().getMonth()]));
+      if (mes) want.push(mes);
+      if (!want.length) continue;
+      const wb = XLSX.read(buf, { type: "array", sheets: want, sheetRows: 40000 });
+      const rowsOf = n => XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: "", blankrows: false });
+      if (want.includes("Orders")) {
+        const R = rowsOf("Orders"), h = hdrIdx(R, ["SO", "DN"]), H = R[h].map(c => up(c).trim());
+        const ix = n => H.indexOf(n), iE = ix("EDD"), iS = ix("SO"), iD = ix("DN"), iC = ix("CLIENT"), iP = ix("POS"), iM = H.findIndex(c => c.startsWith("DESCRIPCION")), iQ = ix("QTY"), iL = ix("LOTE");
+        const fe = H.map((c, i) => [c, i]).filter(([c]) => /^FE/.test(c)).map(([c, i]) => [R[h][i].toString().replace(/^Fe/i, ""), i]);
+        out.orders = R.slice(h + 1).filter(r => r[iS]).map(r => {
+          const dn = String(r[iD] ?? "").trim(), c = centroDe(r[iC]);
+          if (!c || (dn === "PV" && !DIST[c])) return null;
+          return { e: typeof r[iE] === "number" ? r[iE] : null, so: String(r[iS]), dn, c, pos: r[iP], m: String(r[iM] ?? "").trim(), q: +r[iQ] || 0, l: String(r[iL] ?? "").trim(),
+            p: fe.map(([n, i]) => [n, r[i]]).filter(([, v]) => v !== "" && v != null).map(([n, v]) => [n, typeof v === "number" ? v : String(v).trim()]) };
+        }).filter(Boolean);
+        out.ordersAt = Date.now();
+      }
+      if (want.includes("Stock")) {
+        const R = rowsOf("Stock"), h = hdrIdx(R, ["MATERIAL", "LOTE"]), H = R[h].map(c => up(c).trim());
+        const iM = H.findIndex(c => c.startsWith("DESCRIPCION")), iQ = H.indexOf("DISP PED"), iT = H.indexOf("TP LOTE"), iG = H.indexOf("ESPESOR");
+        const g = {};
+        R.slice(h + 1).forEach(r => {
+          const d = String(r[iM] ?? "").trim(), q = +r[iQ] || 0; if (!d || q <= 0 || /NO UTILIZAR/i.test(d)) return;
+          const k = d + "|" + r[iT] + "|" + r[iG]; g[k] = (g[k] || 0) + q;
+        });
+        out.stock = Object.entries(g).map(([k, q]) => { const [d, t, e] = k.split("|"); return [d, t, e, q]; });
+        out.stockAt = Date.now();
+      }
+      if (mes) {
+        const R = rowsOf(mes), h = hdrIdx(R, ["ID", "CLIENTE"]), H = R[h].map(c => up(c).trim()), ix = n => H.indexOf(n);
+        const I = { id: ix("ID"), f: ix("FECHA DE CARGA"), c: ix("CLIENTE"), dn: ix("DN"), t: ix("TIPO ENTREGA"), tr: ix("TRANSPORTE"), a: ix("HORA LLEGADA"), i: ix("INICIO CARGA"), fi: ix("FIN CARGA"), s: ix("HORA SALIDA") };
+        out.cargas = R.slice(h + 1).filter(r => r[I.c]).map(r => {
+          const c = centroDe(r[I.c]); if (!c) return null;
+          return { id: String(r[I.id] ?? "").trim(), f: typeof r[I.f] === "number" ? r[I.f] : null, c, dn: String(r[I.dn] ?? "").trim(), t: String(r[I.t] ?? "").trim(), tr: String(r[I.tr] ?? "").trim(),
+            h: [r[I.a], r[I.i], r[I.fi], r[I.s]].map(fHora) };
+        }).filter(Boolean);
+        out.mes = mes; out.cargasAt = Date.now();
+      }
+    }
+    if (!out.orders && !out.stock && !out.cargas) throw new Error("No reconozco esos Excel: deben tener la pestaña «Orders»/«Stock» o la del mes actual.");
+    CONS = out; try { localStorage.setItem("consultas-v1", JSON.stringify(CONS)); } catch {}
+  }
+  $("consIn").addEventListener("change", async e => {
+    const files = [...e.target.files]; e.target.value = ""; if (!files.length) return;
+    $("hData").textContent = "Leyendo " + files.length + (files.length > 1 ? " archivos" : " archivo") + "… puede tardar unos segundos.";
+    await sleep(50);
+    try { await leerConsultas(files); } catch (err) { $("hData").textContent = err.message || "No se pudo leer el Excel."; return; }
+    renderHome();
+  });
+
+  // centro que se consulta: el de la sesión; quien tiene varios puede cambiarlo (o ver todos)
+  let consC = null;
+  const consOpts = () => !SES ? [] : SES.centros.includes("*") ? Object.keys(CENTROS).sort(cmpC) : SES.centros;
+  const consCentro = () => consC ?? SES?.centro ?? "";
+  const mio = c => consCentro() === "*" ? true : c === consCentro();
+  const cargaDeDN = () => { const m = {}; (CONS?.cargas || []).forEach(x => { if (x.dn) m[x.dn] = x; }); return m; };
+  function estadoLinea(l, cdn) {
+    if (/^\d{6,}$/.test(l.dn)) {
+      const k = cdn[l.dn]; let det = "DN " + l.dn;
+      if (k) det += k.h[3] ? ` · salió el ${k.f != null ? fDia(k.f) : ""} ${k.h[3]}` : k.f != null ? ` · carga ${fDia(k.f)}` : " · carga sin fecha";
+      return { k: "ent", t: "Entrega creada", det };
+    }
+    if (l.l) return { k: "stk", t: "Con stock sin entrega", det: "lote " + l.l.slice(0, 3) };
+    const fechas = l.p.filter(([, v]) => typeof v === "number");
+    if (fechas.length) { const hoy = hoySerial(); const next = fechas.find(([, v]) => v >= hoy) || fechas[fechas.length - 1];
+      return { k: "prd", t: "En producción", det: fechas.map(([n, v]) => n.toLowerCase() + " " + fDia(v)).join(" · "), nx: next }; }
+    return { k: "pln", t: "Sin planificar", det: (l.p.find(([, v]) => /planif|pdte|pend/i.test(v)) || [, "sin fecha de producción"])[1] };
+  }
+  const PILL = { ent: "p-ent", stk: "p-stk", prd: "p-prd", pln: "p-pln" };
+  var pv = "home"; let F = { q: "", est: "all", g: "", t: "", tf: "con" };
+  function goView(v) {
+    pv = v; F = { q: "", est: "all", g: "", t: "", tf: "con" };
+    $("home").hidden = v !== "home"; $("cons").hidden = !["ped", "stk", "trn"].includes(v);
+    $("cam").hidden = $("panel").hidden = v !== "inv";
+    if (v !== "inv" && stream) { try { stream.getTracks().forEach(t => t.stop()); } catch {} stream = null; $("over").hidden = false; }
+    showWho(); window.scrollTo(0, 0);
+    if (v === "home") renderHome(); else if (v !== "inv") renderCons(true);
+  }
+  $("home").addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) goView(b.dataset.go); });
+  function renderHome() {
+    $("hello").textContent = SES ? "Hola, " + SES.nombre.split(/\s+/)[0] : "Hola";
+    const o = (CONS?.orders || []).filter(l => mio(l.c)), cdn = cargaDeDN();
+    const so = new Set(o.map(l => l.so));
+    $("hPed").textContent = CONS?.orders ? so.size + (so.size === 1 ? " abierto" : " abiertos") : "Pedidos abiertos";
+    const cg = (CONS?.cargas || []).filter(x => mio(x.c)), hoy = hoySerial();
+    const est = o.map(l => estadoLinea(l, cdn).k);
+    $("hBox").innerHTML = `<span class="lbl">En ${esc(consCentro() === "*" ? "todos los centros" : nameC(consCentro()))}</span>
+      <div class="row2"><span>Cargas hoy</span><b>${CONS?.cargas ? new Set(cg.filter(x => x.f === hoy).map(x => x.id || x.f)).size : "—"}</b></div>
+      <div class="row2"><span>Líneas con stock sin entrega</span><b>${CONS?.orders ? est.filter(k => k === "stk").length : "—"}</b></div>
+      <div class="row2"><span>Líneas en producción</span><b>${CONS?.orders ? est.filter(k => k === "prd" || k === "pln").length : "—"}</b></div>`;
+    const at = x => x ? new Date(x).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+    $("hData").textContent = CONS ? `Pedidos y stock: ${at(CONS.ordersAt || CONS.stockAt)} · Cargas (${CONS.mes || "—"}): ${at(CONS.cargasAt)}` : "Sin datos cargados.";
+  }
+  const icoBack = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>`;
+  const icoLupa = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6e6c68" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>`;
+  const chipsH = (key, opts, sq) => `<div class="chips${sq ? " sq" : ""}">${opts.map(([v, t]) => `<button class="chip" type="button" data-k="${key}" data-v="${esc(v)}" aria-pressed="${F[key] === v}">${esc(t)}</button>`).join("")}</div>`;
+  function renderCons(full) {
+    const T = { ped: ["Pedidos", "Nº de pedido, entrega o material"], stk: ["Stock de fábrica", "Buscar material (ej. calacatta)"], trn: ["Transportes", ""] }[pv];
+    const opts = consOpts(), cc = consCentro();
+    const sel = opts.length > 1 && pv !== "stk" ? `<select id="cSel" class="csel" aria-label="Centro que consultas">${SES.centros.includes("*") ? `<option value="*" ${cc === "*" ? "selected" : ""}>Todos</option>` : ""}${opts.map(c => `<option value="${c}" ${c === cc ? "selected" : ""}>${esc(nameC(c))}</option>`).join("")}</select>` : "";
+    if (full) $("cons").innerHTML = `<div class="chead"><button class="back" type="button" id="cBack" aria-label="Volver al menú">${icoBack}</button><div><h1>${T[0]}</h1><small id="cSub"></small></div></div>${sel}
+      ${T[1] ? `<label class="search">${icoLupa}<input type="search" id="cQ" placeholder="${T[1]}" aria-label="${T[1]}" autocomplete="off"></label>` : ""}
+      <div id="cFil" style="display:flex;flex-direction:column;gap:10px"></div><div id="cRes" style="display:flex;flex-direction:column;gap:10px"></div>`;
+    const need = { ped: "orders", stk: "stock", trn: "cargas" }[pv];
+    if (!CONS?.[need]) { $("cSub").textContent = ""; $("cFil").innerHTML = ""; $("cRes").innerHTML = `<div class="box"><span>Aún no hay datos.</span><span class="sub" style="color:var(--muted);font-size:.85rem">Vuelve al menú y pulsa «Cargar Excel de pedidos y cargas».</span></div>`; return; }
+    ({ ped: renderPed, stk: renderStk, trn: renderTrn })[pv]();
+  }
+  $("cons").addEventListener("click", e => {
+    if (e.target.closest("#cBack")) { goView("home"); return; }
+    const c = e.target.closest(".chip"); if (!c) return;
+    const k = c.dataset.k; F[k] = F[k] === c.dataset.v && (k === "g" || k === "t") ? "" : c.dataset.v; renderCons(false);
+  });
+  let qT = null;
+  $("cons").addEventListener("input", e => { if (e.target.id !== "cQ") return; clearTimeout(qT); qT = setTimeout(() => { F.q = e.target.value; renderCons(false); }, 180); });
+  $("cons").addEventListener("change", e => { if (e.target.id !== "cSel") return; consC = e.target.value; renderCons(false); });
+  function renderPed() {
+    const cdn = cargaDeDN(), q = up(F.q).trim();
+    const ls = CONS.orders.filter(l => mio(l.c)).map(l => Object.assign({ s: estadoLinea(l, cdn) }, l));
+    const n = k => ls.filter(l => k === "prd" ? l.s.k === "prd" || l.s.k === "pln" : l.s.k === k).length;
+    $("cFil").innerHTML = chipsH("est", [["all", "Todos"], ["ent", "Entrega creada · " + n("ent")], ["stk", "Con stock sin entrega · " + n("stk")], ["prd", "En producción · " + n("prd")]]);
+    const ok = l => (F.est === "all" || l.s.k === F.est || (F.est === "prd" && l.s.k === "pln")) && (!q || up(l.so + " " + l.dn + " " + l.m).includes(q));
+    const by = new Map(); ls.forEach(l => { if (!by.has(l.so)) by.set(l.so, []); by.get(l.so).push(l); });
+    const peds = [...by.entries()].map(([so, L]) => ({ so, L, V: L.filter(ok), e: Math.min(...L.map(l => l.e ?? 1e9)), c: L[0].c })).filter(p => p.V.length).sort((a, b) => a.e - b.e);
+    $("cSub").textContent = `${by.size} ${by.size === 1 ? "pedido abierto" : "pedidos abiertos"}`;
+    const hoy = hoySerial();
+    $("cRes").innerHTML = peds.length ? peds.slice(0, 80).map(p => `<div class="card"><div class="ch"><div><div class="so">${esc(p.so)}</div><div class="sub">${p.L.length} ${p.L.length === 1 ? "línea" : "líneas"} · ${tb2(p.L.reduce((a, l) => a + l.q, 0))}${consCentro() === "*" ? " · " + esc(nameC(p.c)) : ""}</div></div>
+      <div style="text-align:right"><div class="lbl">Entrega prevista</div><b style="font-weight:500;${p.e < hoy ? "color:#a33a2c" : ""}">${p.e < 1e9 ? fDia(p.e) : "—"}</b></div></div>
+      ${p.V.slice(0, 40).map(l => `<div class="ln"><div><div>${esc(l.m)}</div><div class="sub">${tb2(l.q)} · ${esc(l.s.det)}</div></div><span class="pill ${PILL[l.s.k]}">${l.s.t}</span></div>`).join("")}
+      ${p.V.length > 40 ? `<div class="ln sub">… y ${p.V.length - 40} líneas más</div>` : ""}</div>`).join("") + (peds.length > 80 ? `<p class="sub" style="text-align:center">Mostrando 80 de ${peds.length}. Usa el buscador.</p>` : "")
+      : `<div class="box">No hay pedidos con ese filtro.</div>`;
+  }
+  function renderStk() {
+    const S = CONS.stock, q = up(F.q).trim().split(/\s+/).filter(Boolean);
+    const gs = [...new Set(S.map(r => r[2]))].sort((a, b) => a - b), ts = [...new Set(S.map(r => r[1]))].sort();
+    $("cFil").innerHTML = `<div style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Grosor (mm)</span>${chipsH("g", gs.map(g => [g, String(+g)]), true)}</div>
+      <div style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Calidad</span>${chipsH("t", ts.map(t => [t, t]), true)}</div>`;
+    const R = S.filter(r => (!F.g || r[2] === F.g) && (!F.t || r[1] === F.t) && q.every(w => up(r[0]).includes(w)));
+    const g = new Map(); R.forEach(([d, t, , n]) => { const x = g.get(d) || { d, n: 0, t: {} }; x.n += n; x.t[t] = (x.t[t] || 0) + n; g.set(d, x); });
+    const L = [...g.values()].sort((a, b) => b.n - a.n), tot = L.reduce((a, x) => a + x.n, 0);
+    $("cSub").textContent = "Tablas disponibles para pedir";
+    $("cRes").innerHTML = `<div class="sumline"><span>${L.length} ${L.length === 1 ? "material" : "materiales"}</span><span><b>${tot.toLocaleString("es-ES")}</b> tablas</span></div>` +
+      L.slice(0, 60).map(x => `<div class="card"><div class="ln" style="align-items:center"><div><div>${esc(x.d)}</div><div class="sub">${Object.entries(x.t).sort((a, b) => b[1] - a[1]).map(([t, n]) => esc(t) + " " + n).join(" · ")}</div></div>
+        <div style="text-align:right;flex-shrink:0"><b style="font-family:var(--f-display);font-weight:500;font-size:1.4rem">${x.n.toLocaleString("es-ES")}</b><div class="sub">tablas</div></div></div></div>`).join("") +
+      (L.length > 60 ? `<p class="sub" style="text-align:center">Mostrando 60 de ${L.length}. Escribe en el buscador o elige grosor y calidad.</p>` : "") + (!L.length ? `<div class="box">No hay stock con ese filtro.</div>` : "");
+  }
+  function renderTrn() {
+    const X = CONS.cargas.filter(x => mio(x.c)), g = new Map();
+    X.forEach(x => { const k = x.id ? "i" + x.id : x.f != null ? "f" + x.f + x.c : "s" + x.c; if (!g.has(k)) g.set(k, []); g.get(k).push(x); });
+    const C = [...g.values()].map(L => ({ L, x: L[0], h: L.find(r => r.h.some(Boolean))?.h || L[0].h }));
+    const con = C.filter(k => k.x.f != null).sort((a, b) => a.x.f - b.x.f || a.x.id.localeCompare(b.x.id)), sin = C.filter(k => k.x.f == null);
+    $("cFil").innerHTML = chipsH("tf", [["con", "Con fecha · " + con.length], ["sin", "Sin fecha · " + sin.length]]);
+    $("cSub").textContent = "Cargas de " + (CONS.mes || "este mes").toLowerCase();
+    const L = F.tf === "sin" ? sin : con, hoy = hoySerial();
+    const est = k => k.x.f == null ? ["Esperando fecha", "p-pln"] : k.h[3] ? ["Salió " + k.h[3], "p-stk"] : k.h[2] ? ["Cargado", "p-stk"] : k.h[1] ? ["Cargando", "p-prd"] : k.h[0] ? ["Camión en planta", "p-prd"] : ["Programada", "p-ent"];
+    $("cRes").innerHTML = L.length ? L.map(k => { const [t, cl] = est(k); return `<div class="card"><div class="ch" style="border-bottom:0"><div><b style="font-weight:500;font-size:1.05rem">${k.x.f != null ? fDiaL(k.x.f) + (k.x.f === hoy ? " · hoy" : "") : "Sin fecha"}</b>
+      <div class="sub">${k.x.id ? "Carga <span style=\"font-family:var(--f-mono)\">" + esc(k.x.id) + "</span>" : "Sin carga asignada"}${k.x.tr ? " · " + esc(k.x.tr) : ""}${consCentro() === "*" ? " · " + esc(nameC(k.x.c)) : ""}</div></div><span class="pill ${cl}">${t}</span></div>
+      ${k.x.f != null ? `<div class="steps">${["Llegada", "Inicio carga", "Fin carga", "Salida"].map((s, i) => `<div><i class="${k.h[i] ? "on" : ""}"></i>${s}<b>${k.h[i] || "—"}</b></div>`).join("")}</div>` : ""}
+      ${k.L.map(r => `<div class="ln" style="font-size:.9rem"><span style="font-family:var(--f-mono)">${esc(r.dn || "—")}</span><span class="sub">${esc(r.t)}</span></div>`).join("")}</div>`; }).join("")
+      : `<div class="box">No hay cargas ${F.tf === "sin" ? "sin fecha" : "con fecha"} este mes.</div>`;
+  }
+
   if (SES) { miCentro = SES.centro; $("login").hidden = true; showWho(); loadUsers().then(() => {
       // si le han quitado el acceso o han cambiado sus centros, se actualiza la sesión
       if (USERS && USERS.length) { const u = USERS.find(u => u.nombre === SES.nombre);
@@ -907,6 +1172,7 @@ li .tag{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:upp
         SES.centros = u.centros; try { localStorage.setItem("sesion", JSON.stringify(SES)); } catch {} }
     }); }
   else { showLogin(); loadUsers().then(() => { if (!SES) showLogin(); }); }
+  goView("home");
 
   render();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
